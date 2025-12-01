@@ -152,7 +152,7 @@
         }
 
         .btn-group {
-            margin-bottom: 20px;
+            margin-bottom: 80px;
             z-index: 60;
         }
 
@@ -177,7 +177,7 @@
         .plaza-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 40px 25px;
+            gap: 80px 25px;
             width: 100%;
             max-width: 95vw;
             padding-bottom: 150px;
@@ -538,7 +538,7 @@
 
         .speech-bubble {
             position: absolute;
-            top: -55px;
+            top: -70px;
             left: 50%;
             transform: translateX(-50%);
             background: #fff;
@@ -642,42 +642,12 @@
                 opacity: 0.3;
             }
         }
-
-        .snow-pile {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100px;
-            background: radial-gradient(circle at 20% 100%, white 30%, transparent 31%), radial-gradient(circle at 50% 100%, white 40%, transparent 41%), radial-gradient(circle at 80% 100%, white 35%, transparent 36%);
-            background-size: 150% 100%;
-            background-repeat: no-repeat;
-            z-index: 0;
-            pointer-events: none;
-            filter: blur(4px);
-            opacity: 0.9;
-        }
-
-        .snow-pile::before {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: -10%;
-            width: 120%;
-            height: 80px;
-            background: radial-gradient(circle at 10% 100%, white 25%, transparent 26%), radial-gradient(circle at 40% 100%, white 35%, transparent 36%), radial-gradient(circle at 70% 100%, white 30%, transparent 31%), radial-gradient(circle at 95% 100%, white 28%, transparent 29%);
-            background-size: 150% 100%;
-            background-repeat: no-repeat;
-            filter: blur(6px);
-            opacity: 0.7;
-        }
     </style>
 </head>
 
 <body>
     <div class="disco-overlay"></div>
     <div class="snow-container"></div>
-    <div class="snow-pile"></div>
 
     <!-- 🖥️ 廣場顯示區 (預設顯示) -->
     <div id="plaza-view" class="view-section active">
@@ -742,8 +712,6 @@
             // 切換到手機上傳模式
             document.getElementById('plaza-view').classList.remove('active');
             document.getElementById('upload-view').classList.add('active');
-            // 隱藏不必要的背景元素以優化手機效能
-            document.querySelector('.snow-pile').style.display = 'none';
         } else {
             // 停留在廣場模式，生成 QR Code
             // 獲取當前網址，並加上 ?mode=upload
