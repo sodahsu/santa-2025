@@ -656,7 +656,7 @@
         <!-- QR Code 卡片 -->
         <div class="qr-card">
             <img id="qr-code-img" src="" alt="Scan Me">
-            <p>📱 手機掃描加入廣場</p>
+            <p>📱 手機掃描加入廣場 | <a href="?mode=upload" style="color: var(--primary); text-decoration: underline; font-weight: bold;">點我直接加入</a></p>
         </div>
 
         <div class="btn-group">
@@ -676,9 +676,8 @@
 
             <input type="text" id="nameInput" placeholder="輸入你的暱稱 (例如: Andy)" autocomplete="off">
 
+            <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
             <label for="fileInput" class="file-upload-btn">📷 選擇或拍攝照片</label>
-            <input type="file" id="fileInput" accept="image/*">
-
             <div id="preview-container" class="santa-wrapper"
                 style="display:inline-block; transform: scale(1.2); margin: 20px;">
                 <div class="css-hat"></div>
@@ -686,6 +685,7 @@
             </div>
 
             <button id="uploadBtn" onclick="compressAndUpload()">🚀 發送上大螢幕</button>
+            <button onclick="location.href='?'" style="width: 90%; padding: 12px; margin-top: 10px; background: #6c757d; color: white; border: none; border-radius: 50px; font-size: 1rem; cursor: pointer;">🏠 返回廣場</button>
             <p id="statusMsg" style="margin-top: 15px; font-size: 0.9rem; color: #666;"></p>
         </div>
     </div>
