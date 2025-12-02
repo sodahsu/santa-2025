@@ -3,10 +3,13 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>🎅 聖誕老人集合廣場</title>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Clarity Tracking (保留原本的) -->
     <script type="text/javascript">
         (function (c, l, a, r, i, t, y) {
             c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
@@ -119,9 +122,9 @@
             font-size: 2.5rem;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
             z-index: 60;
+            text-align: center;
         }
 
-        /* QR Code 懸浮卡片 */
         .qr-card {
             background: rgba(255, 255, 255, 0.9);
             color: #333;
@@ -159,7 +162,7 @@
         }
 
         .btn-group {
-            margin-bottom: 80px;
+            margin-bottom: 50px;
             z-index: 60;
         }
 
@@ -181,10 +184,12 @@
             background: #9b59b6;
         }
 
+        /* 使用 Flex + Order 來做排序，比 Grid 更容易動態調整順序 */
         .plaza-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 80px 25px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 60px 30px;
             width: 100%;
             max-width: 95vw;
             padding-bottom: 150px;
@@ -270,15 +275,18 @@
             display: none;
         }
 
-        /* === 共通樣式 === */
+        /* === 卡片與動畫 === */
         .santa-card {
             display: flex;
             flex-direction: column;
             align-items: center;
             animation: popIn 0.5s ease-out;
             position: relative;
-            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: order 0.5s ease, transform 0.3s;
+            /* 加入 order 過渡 */
             cursor: pointer;
+            width: 120px;
+            margin: 10px;
         }
 
         .santa-card:active {
@@ -294,6 +302,19 @@
             padding: 2px 8px;
             border-radius: 10px;
             transition: all 0.3s;
+        }
+
+        /* 新增：點擊計數徽章 */
+        .click-badge {
+            background: #f1c40f;
+            color: #333;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-top: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            opacity: 0.9;
         }
 
         @keyframes popIn {
@@ -360,6 +381,7 @@
             border-radius: 10px;
         }
 
+        /* 動畫區 */
         @keyframes dance-sway {
 
             0%,
@@ -424,25 +446,6 @@
             animation-duration: 0.5s !important;
         }
 
-        @keyframes spin-crazy {
-            0% {
-                transform: rotate(0deg) scale(1);
-            }
-
-            50% {
-                transform: rotate(180deg) scale(1.2);
-            }
-
-            100% {
-                transform: rotate(360deg) scale(1);
-            }
-        }
-
-        .mode-spin {
-            animation: spin-crazy 0.5s ease-in-out !important;
-            z-index: 100;
-        }
-
         @keyframes run-away-right {
             0% {
                 transform: translateX(0) scale(1) skewX(0);
@@ -455,6 +458,27 @@
             100% {
                 transform: translateX(2000px) scale(0.8) skewX(45deg);
                 opacity: 0;
+            }
+        }
+
+        @keyframes drop-from-sky {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
+
+            60% {
+                transform: translateY(10px);
+                opacity: 1;
+            }
+
+            80% {
+                transform: translateY(-5px);
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
             }
         }
 
@@ -501,27 +525,6 @@
 
             100% {
                 transform: translate(1px, -2px) rotate(-1deg);
-            }
-        }
-
-        @keyframes drop-from-sky {
-            0% {
-                transform: translateY(-100vh);
-                opacity: 0;
-            }
-
-            60% {
-                transform: translateY(10px);
-                opacity: 1;
-            }
-
-            80% {
-                transform: translateY(-5px);
-            }
-
-            100% {
-                transform: translateY(0);
-                opacity: 1;
             }
         }
 
@@ -653,6 +656,7 @@
 </head>
 
 <body>
+    <audio id="bg-music" src="christmas.mp3" loop></audio>
     <div class="disco-overlay"></div>
     <div class="snow-container"></div>
 
@@ -663,7 +667,7 @@
         <!-- QR Code 卡片 -->
         <div class="qr-card">
             <img id="qr-code-img" src="" alt="Scan Me">
-            <p>📱 手機掃描加入廣場 | <a href="?mode=upload"
+            <p>📱 掃描加入廣場 | <a href="?mode=upload"
                     style="color: var(--primary); text-decoration: underline; font-weight: bold;">點我直接加入</a></p>
         </div>
 
@@ -672,7 +676,7 @@
         </div>
 
         <div id="plaza" class="plaza-grid">
-            <p style="color:#eee">正在連線到北極...</p>
+            <p style="color:#eee; width: 100%; text-align: center;">正在連線到北極...</p>
         </div>
     </div>
 
@@ -683,9 +687,9 @@
             <p>上傳一張大頭照，你就會出現在大螢幕上喔！</p>
 
             <input type="text" id="nameInput" placeholder="輸入你的暱稱 (例如: Andy)" autocomplete="off">
-
             <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
             <label for="fileInput" class="file-upload-btn">📷 選擇或拍攝照片</label>
+
             <div id="preview-container" class="santa-wrapper"
                 style="display:inline-block; transform: scale(1.2); margin: 20px;">
                 <div class="css-hat"></div>
@@ -714,12 +718,30 @@
         }
         const db = firebase.firestore();
 
+        // --- 音樂播放控制 ---
+        const audio = document.getElementById('bg-music');
+        let hasInteracted = false;
+
+        function playMusic() {
+            if (audio.paused && hasInteracted) {
+                audio.play().catch(e => console.error("音樂播放失敗:", e));
+            }
+        }
+
+        // 首次使用者互動後，允許音樂播放
+        document.body.addEventListener('click', () => {
+            if (!hasInteracted) {
+                hasInteracted = true;
+                playMusic();
+            }
+        }, { once: true });
+
+
         // 🔄 路由控制：檢查是不是手機掃碼進來的
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
 
         if (mode === 'upload') {
-            // 切換到手機上傳模式
             document.getElementById('plaza-view').classList.remove('active');
             document.getElementById('upload-view').classList.add('active');
         } else {
@@ -728,22 +750,22 @@
             const uploadUrl = window.location.href.split('?')[0] + '?mode=upload';
             // 使用免費 API 生成 QR Code
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uploadUrl)}`;
+            // 嘗試播放音樂
+            playMusic();
         }
 
         // --- 以下是共用邏輯 ---
-
         const randomMessages = [
             "想吃炸雞啦 🍗", "想下班 😫", "我是最聰明的 🧠", "聖誕快樂！ 🎄", "薪水匯了嗎？ 💰",
             "誰偷吃我的布丁 🍮", "Code 寫不完... 💻", "今晚去哪趴？ 🍺", "好想睡覺 💤", "年終獎金呢？ 🧧",
             "我要當馴鹿 🦌", "Ho Ho Ho! 🎅", "辦公室好冷 🥶", "我要訂飲料 🧋", "老闆在看我嗎 👀",
-            "Error 404: Motivation Not Found", "我的靈魂已下班 👻", "快點給我紅包 🧧", "誰有點心？ 🍩",
+            "Motivation Not Found", "我的靈魂已下班 👻", "快點給我紅包 🧧", "誰有點心？ 🍩",
             "我是誰？我在哪？ 🤔", "加班？那是啥？ 🌚", "我要回家追劇 📺", "聖誕老人來發錢嗎？ 💸",
-            "我的肝在燃燒 🔥", "鍵盤冒煙了 ⌨️", "咖啡是生命之水 ☕", "不要再開會了 🚫", "我想去北極度假 ❄️",
-            "誰把冷氣開這麼強 🥶", "肚子好餓... 🍔", "PM 又改需求了？ 😱", "Bug 越修越多 🐛", "神啊救救我吧 🙏",
-            "其實我是外星人 👽", "地球好危險 🌍", "我要冬眠了 🐻", "有人看到我的腦袋嗎？ 🧠", "聖誕禮物是 Bug 🎁",
+            "我的肝在燃燒 🔥", "咖啡是生命之水 ☕", "不要再開會了 🚫", "我想去北極度假 ❄️",
+            "肚子好餓... 🍔", "PM 又改需求了？ 😱", "Bug 越修越多 🐛", "神啊救救我吧 🙏",
+            "其實我是外星人 👽", "地球好危險 🌍", "我要冬眠了 🐻", "有人看到我的腦袋嗎？ 🧠",
             "我愛工作 (才怪) 🤥", "今天便當吃什麼？ 🍱"
         ];
-        const pokeMessages = ["哎呦! 😵", "別戳我! 😠", "暈了暈了 💫", "我要加薪! 💰", "幹嘛啦? 😒", "好癢喔! 😂", "Merry Xmas! 🎄", "給糖吃! 🍬", "我是老闆! 👔"];
         const danceClasses = ['dance-1', 'dance-2', 'dance-3'];
 
         const fileInput = document.getElementById('fileInput');
@@ -753,7 +775,6 @@
         const previewImg = document.getElementById('preview-img');
         const previewContainer = document.getElementById('preview-container');
         let selectedFile = null;
-        let currentSnapshotDocs = [];
 
         // 預覽圖片
         if (fileInput) {
@@ -772,7 +793,7 @@
             });
         }
 
-        // 上傳功能 (手機端用)
+        // 上傳功能
         async function compressAndUpload() {
             const name = nameInput.value.trim();
             if (!name || !selectedFile) { statusMsg.innerText = "❌ 請輸入名字並選擇照片！"; return; }
@@ -784,18 +805,23 @@
 
             try {
                 const compressedBase64 = await compressImage(selectedFile);
+
+                // 檢查大小 (Firestore 限制 1MB，安全起見限制在 800KB)
+                if (compressedBase64.length > 800000) {
+                    throw new Error("照片壓縮後仍然太大，請換一張試試！");
+                }
+
                 await db.collection('santas').add({
                     name: name,
                     photoBase64: compressedBase64,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    clickCount: 0
                 });
                 statusMsg.style.color = "#2ecc71";
                 statusMsg.innerText = "✅ 發送成功！請看大螢幕！";
 
-                // 重置表單
                 setTimeout(() => {
-                    nameInput.value = '';
-                    fileInput.value = '';
+                    nameInput.value = ''; fileInput.value = '';
                     previewContainer.style.display = 'none';
                     selectedFile = null;
                     uploadBtn.disabled = false;
@@ -821,91 +847,147 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const maxWidth = 200;
+                        // 稍微縮小尺寸確保 Base64 不會爆掉
+                        const maxWidth = 250;
                         const scaleSize = maxWidth / img.width;
                         canvas.width = maxWidth;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        // 品質調低一點
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                         resolve(dataUrl);
                     }; img.onerror = (error) => reject(error);
                 };
             });
         }
 
-        // 只有在大螢幕模式才監聽資料庫和特效，節省手機流量
+        // 大螢幕邏輯
         if (mode !== 'upload') {
-            db.collection('santas').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
-                currentSnapshotDocs = snapshot.docs;
-                renderPlaza();
+            const plaza = document.getElementById('plaza');
+            let renderedIds = new Set(); // 記錄已經渲染的 ID
+
+            // 監聽資料庫變化
+            db.collection('santas').onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    if (plaza.innerHTML.includes("連線")) plaza.innerHTML = '<p style="color:#eee">掃描上方 QR Code 加入我們！</p>';
+                    return;
+                }
+
+                // 清除"正在連線"字樣
+                if (plaza.querySelector('p')) {
+                    const p = plaza.querySelector('p');
+                    if (p.innerText.includes("連線") || p.innerText.includes("掃描")) p.remove();
+                }
+
+                // 準備數據與排序 (依照點擊數降序，相同則依時間)
+                let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                docs.sort((a, b) => {
+                    const countA = a.clickCount || 0;
+                    const countB = b.clickCount || 0;
+                    if (countB !== countA) return countB - countA;
+                    // 時間戳可能是 null (剛寫入時)，給個預設值
+                    const timeA = a.createdAt ? a.createdAt.seconds : Date.now() / 1000;
+                    const timeB = b.createdAt ? b.createdAt.seconds : Date.now() / 1000;
+                    return timeB - timeA;
+                });
+
+                // 智能渲染 (Smart Rendering)
+                docs.forEach((data, index) => {
+                    let card = document.getElementById(`santa-${data.id}`);
+
+                    if (!card) {
+                        // 新增卡片
+                        card = createSantaCard(data);
+                        plaza.appendChild(card);
+                    } else {
+                        // 更新現有卡片 (如果需要更新名字或照片，可以在這做，這裡只更新點擊數)
+                        const badge = card.querySelector('.click-badge');
+                        if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
+                    }
+
+                    // 更新排序位置 (利用 CSS order)
+                    card.style.order = index;
+                });
+
+                // 移除已刪除的資料 (如果有刪除功能的話)
+                /* 
+                const currentIds = new Set(docs.map(d => d.id));
+                Array.from(plaza.children).forEach(child => {
+                    if (child.dataset.id && !currentIds.has(child.dataset.id)) {
+                        child.remove();
+                    }
+                });
+                */
             });
 
-            // ⏰ 30秒大風吹 (人數 > 40 才啟動)
-            setInterval(() => {
-                if (currentSnapshotDocs.length > 40) { renderPlaza(); }
-            }, 30000);
+            function createSantaCard(data) {
+                const card = document.createElement('div');
+                card.className = 'santa-card';
+                card.id = `santa-${data.id}`;
+                card.dataset.id = data.id;
 
-            function renderPlaza() {
-                const plaza = document.getElementById('plaza');
-                plaza.innerHTML = '';
-                if (currentSnapshotDocs.length === 0) { plaza.innerHTML = '<p style="color:#eee">掃描上方 QR Code 加入我們！</p>'; return; }
+                const assignedMsg = randomMessages[Math.floor(Math.random() * randomMessages.length)];
+                const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
+                const randomDelay = Math.random() * 2;
+                const clickCount = data.clickCount || 0;
 
-                let docsToRender = [...currentSnapshotDocs]; // 列出所有人
-
-                // 洗牌位置
-                for (let i = docsToRender.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [docsToRender[i], docsToRender[j]] = [docsToRender[j], docsToRender[i]];
-                }
-                // 洗牌語錄
-                let shuffledMessages = [...randomMessages];
-                for (let i = shuffledMessages.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffledMessages[i], shuffledMessages[j]] = [shuffledMessages[j], shuffledMessages[i]];
-                }
-
-                docsToRender.forEach((doc, index) => {
-                    const data = doc.data();
-                    const card = document.createElement('div');
-                    card.className = 'santa-card';
-                    card.dataset.id = doc.id;
-
-                    const assignedMsg = shuffledMessages[index % shuffledMessages.length];
-                    const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
-                    const randomDelay = Math.random() * 2;
-
-                    card.innerHTML = `
-                        <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
-                            <div class="speech-bubble">${assignedMsg}</div>
-                            <div class="css-hat"></div>
-                            <img src="${data.photoBase64}" class="santa-img">
-                        </div>
-                        <div class="santa-name">${escapeHtml(data.name)}</div>
-                    `;
-                    card.onclick = function () { handlePoke(this); };
-                    plaza.appendChild(card);
-                });
+                card.innerHTML = `
+                    <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
+                        <div class="speech-bubble">${assignedMsg}</div>
+                        <div class="css-hat"></div>
+                        <img src="${data.photoBase64}" class="santa-img">
+                    </div>
+                    <div class="santa-name">${escapeHtml(data.name)}</div>
+                    <div class="click-badge">👍 ${clickCount}</div>
+                `;
+                card.onclick = function () { handlePoke(this); };
+                return card;
             }
 
             function handlePoke(card) {
                 if (card.classList.contains('busy')) return;
-                const pokeMsg = pokeMessages[Math.floor(Math.random() * pokeMessages.length)];
+
+                const docId = card.dataset.id;
+                if (docId) {
+                    // Optimistic UI Update (先更新畫面數字比較爽)
+                    const badge = card.querySelector('.click-badge');
+                    let current = parseInt(badge.innerText.split(' ')[1]);
+                    badge.innerText = `👍 ${current + 1}`;
+
+                    db.collection('santas').doc(docId).update({
+                        clickCount: firebase.firestore.FieldValue.increment(1)
+                    }).catch(err => console.error(err));
+                }
+
+                const pokeMsg = "點屁呀～～";
                 const bubble = card.querySelector('.speech-bubble');
                 const originalText = bubble.innerText;
+
+                // 戳的動畫
+                bubble.innerText = pokeMsg;
+                bubble.classList.add('bubble-poke');
+
+                // 帽子稍微跳一下
                 const wrapper = card.querySelector('.santa-wrapper');
-                bubble.innerText = pokeMsg; bubble.classList.add('bubble-poke'); wrapper.classList.add('mode-spin');
-                setTimeout(() => { bubble.innerText = originalText; bubble.classList.remove('bubble-poke'); wrapper.classList.remove('mode-spin'); }, 1000);
+                wrapper.style.transform = "scale(1.1)";
+                setTimeout(() => wrapper.style.transform = "", 200);
+
+                setTimeout(() => {
+                    bubble.innerText = originalText;
+                    bubble.classList.remove('bubble-poke');
+                }, 1000);
             }
 
-            // 特效與動畫啟動
-            window.addEventListener('resize', () => { renderPlaza(); });
+            // 啟動環境特效
+            window.addEventListener('resize', () => { /* 這裡不需要重繪，CSS Flex 會自動處理 */ });
             createSnow();
             startRandomRunAway();
             startRandomIntrovertEvent();
             startDiscoMode();
         }
 
+        // --- Helper Functions ---
         function manualDisco() {
             if (document.body.classList.contains('disco-mode')) return;
             triggerDiscoEffect();
@@ -914,12 +996,12 @@
             document.body.classList.add('disco-mode');
             setTimeout(() => { document.body.classList.remove('disco-mode'); }, 5000);
         }
-
         function escapeHtml(text) {
+            if (!text) return "Santa";
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // 隨機事件函數 (只有大螢幕模式會載入執行)
+        // 隨機事件邏輯
         function createSnow() {
             const snowContainer = document.querySelector('.snow-container');
             for (let i = 0; i < 50; i++) {
