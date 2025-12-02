@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- Clarity Tracking (保留原本的) -->
+    <!-- Clarity Tracking -->
     <script type="text/javascript">
         (function (c, l, a, r, i, t, y) {
             c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
@@ -58,6 +58,70 @@
             pointer-events: none;
             z-index: -1;
             transition: background 0.5s;
+        }
+
+        /* === 🚪 入場遮罩樣式 (新增) === */
+        #entry-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .entry-content {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(212, 36, 38, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .entry-content h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        #enterBtn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        #enterBtn:hover {
+            transform: scale(1.1);
+            background: #ff3336;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(212, 36, 38, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(212, 36, 38, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(212, 36, 38, 0);
+            }
         }
 
         /* 🕺 Disco 模式 */
@@ -184,7 +248,6 @@
             background: #9b59b6;
         }
 
-        /* 使用 Flex + Order 來做排序，比 Grid 更容易動態調整順序 */
         .plaza-grid {
             display: flex;
             flex-wrap: wrap;
@@ -283,7 +346,6 @@
             animation: popIn 0.5s ease-out;
             position: relative;
             transition: order 0.5s ease, transform 0.3s;
-            /* 加入 order 過渡 */
             cursor: pointer;
             width: 120px;
             margin: 10px;
@@ -304,7 +366,6 @@
             transition: all 0.3s;
         }
 
-        /* 新增：點擊計數徽章 */
         .click-badge {
             background: #f1c40f;
             color: #333;
@@ -381,7 +442,6 @@
             border-radius: 10px;
         }
 
-        /* 動畫區 */
         @keyframes dance-sway {
 
             0%,
@@ -656,7 +716,20 @@
 </head>
 
 <body>
-    <audio id="bg-music" src="christmas.mp3" loop></audio>
+    <!-- 🚪 新增：入場遮罩 -->
+    <div id="entry-overlay">
+        <div class="entry-content">
+            <h1>🎅 聖誕派對準備開始！</h1>
+            <p>你準備加入了嗎？</p>
+            <br>
+            <button id="enterBtn" onclick="enterParty()">確定 (開啟音樂 🎵)</button>
+        </div>
+    </div>
+
+    <!-- 🎵 新增：背景音樂 (Jingle Bells Jazz) -->
+    <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3
+" loop></audio>
+
     <div class="disco-overlay"></div>
     <div class="snow-container"></div>
 
@@ -667,7 +740,8 @@
         <!-- QR Code 卡片 -->
         <div class="qr-card">
             <img id="qr-code-img" src="" alt="Scan Me">
-            <p>📱 掃描加入廣場 | <a href="?mode=upload"
+            <!-- 注意：這裡改成了 onclick 事件，而不是 href 跳轉，這樣音樂才不會斷 -->
+            <p>📱 掃描加入廣場 | <a href="#" onclick="switchMode('upload'); return false;"
                     style="color: var(--primary); text-decoration: underline; font-weight: bold;">點我直接加入</a></p>
         </div>
 
@@ -697,7 +771,8 @@
             </div>
 
             <button id="uploadBtn" onclick="compressAndUpload()">🚀 發送上大螢幕</button>
-            <button onclick="location.href='?'"
+            <!-- 這裡也改成使用 JS 切換回廣場 -->
+            <button onclick="switchMode('plaza')"
                 style="width: 90%; padding: 12px; margin-top: 10px; background: #6c757d; color: white; border: none; border-radius: 50px; font-size: 1rem; cursor: pointer;">🏠
                 返回廣場</button>
             <p id="statusMsg" style="margin-top: 15px; font-size: 0.9rem; color: #666;"></p>
@@ -705,7 +780,7 @@
     </div>
 
     <script>
-        // ✅ Config (請確認與之前一致)
+        // ✅ Config
         const firebaseConfig = {
             apiKey: "AIzaSyAY9qAImKRnhjqpHfucXNISohWx0iE2zxw",
             authDomain: "santa-2025-99a12.firebaseapp.com",
@@ -718,43 +793,57 @@
         }
         const db = firebase.firestore();
 
-        // --- 音樂播放控制 ---
-        const audio = document.getElementById('bg-music');
-        let hasInteracted = false;
+        // 🎵 音樂與遮罩邏輯
+        function enterParty() {
+            const overlay = document.getElementById('entry-overlay');
+            const bgm = document.getElementById('bgm');
 
-        function playMusic() {
-            if (audio.paused && hasInteracted) {
-                audio.play().catch(e => console.error("音樂播放失敗:", e));
+            // 嘗試播放音樂
+            bgm.volume = 0.5; // 音量設為 50%
+            bgm.play().then(() => {
+                console.log("Music started!");
+            }).catch(error => {
+                console.log("Auto-play blocked or failed:", error);
+            });
+
+            // 淡出並移除遮罩
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 800);
+        }
+
+        // 🔄 畫面切換邏輯 (SPA 模式，不重新整理)
+        function switchMode(target) {
+            const plazaView = document.getElementById('plaza-view');
+            const uploadView = document.getElementById('upload-view');
+
+            if (target === 'upload') {
+                plazaView.classList.remove('active');
+                uploadView.classList.add('active');
+                // 選擇性：更新網址但不重新整理
+                history.pushState({ mode: 'upload' }, '', '?mode=upload');
+            } else {
+                uploadView.classList.remove('active');
+                plazaView.classList.add('active');
+                history.pushState({ mode: 'plaza' }, '', window.location.pathname);
             }
         }
 
-        // 首次使用者互動後，允許音樂播放
-        document.body.addEventListener('click', () => {
-            if (!hasInteracted) {
-                hasInteracted = true;
-                playMusic();
-            }
-        }, { once: true });
-
-
-        // 🔄 路由控制：檢查是不是手機掃碼進來的
+        // 🔄 初始載入路由控制
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
+
+        // 設定 QR Code (總是使用帶有 mode=upload 的網址)
+        const uploadUrl = window.location.href.split('?')[0] + '?mode=upload';
+        document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uploadUrl)}`;
 
         if (mode === 'upload') {
             document.getElementById('plaza-view').classList.remove('active');
             document.getElementById('upload-view').classList.add('active');
-        } else {
-            // 停留在廣場模式，生成 QR Code
-            // 獲取當前網址，並加上 ?mode=upload
-            const uploadUrl = window.location.href.split('?')[0] + '?mode=upload';
-            // 使用免費 API 生成 QR Code
-            document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uploadUrl)}`;
-            // 嘗試播放音樂
-            playMusic();
         }
 
-        // --- 以下是共用邏輯 ---
+        // --- Logic ---
         const randomMessages = [
             "想吃炸雞啦 🍗", "想下班 😫", "我是最聰明的 🧠", "聖誕快樂！ 🎄", "薪水匯了嗎？ 💰",
             "誰偷吃我的布丁 🍮", "Code 寫不完... 💻", "今晚去哪趴？ 🍺", "好想睡覺 💤", "年終獎金呢？ 🧧",
@@ -806,7 +895,6 @@
             try {
                 const compressedBase64 = await compressImage(selectedFile);
 
-                // 檢查大小 (Firestore 限制 1MB，安全起見限制在 800KB)
                 if (compressedBase64.length > 800000) {
                     throw new Error("照片壓縮後仍然太大，請換一張試試！");
                 }
@@ -827,6 +915,8 @@
                     uploadBtn.disabled = false;
                     uploadBtn.innerText = "🚀 發送上大螢幕";
                     statusMsg.innerText = "";
+                    // 上傳成功後自動切回廣場 (可選)
+                    // switchMode('plaza');
                 }, 3000);
 
             } catch (error) {
@@ -847,14 +937,12 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        // 稍微縮小尺寸確保 Base64 不會爆掉
                         const maxWidth = 250;
                         const scaleSize = maxWidth / img.width;
                         canvas.width = maxWidth;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        // 品質調低一點
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                         resolve(dataUrl);
                     }; img.onerror = (error) => reject(error);
@@ -862,130 +950,104 @@
             });
         }
 
-        // 大螢幕邏輯
-        if (mode !== 'upload') {
-            const plaza = document.getElementById('plaza');
-            let renderedIds = new Set(); // 記錄已經渲染的 ID
+        // 大螢幕邏輯 (只在廣場模式或背景執行)
+        const plaza = document.getElementById('plaza');
 
-            // 監聽資料庫變化
-            db.collection('santas').onSnapshot((snapshot) => {
-                if (snapshot.empty) {
-                    if (plaza.innerHTML.includes("連線")) plaza.innerHTML = '<p style="color:#eee">掃描上方 QR Code 加入我們！</p>';
-                    return;
-                }
+        db.collection('santas').onSnapshot((snapshot) => {
+            if (snapshot.empty) {
+                if (plaza.innerHTML.includes("連線")) plaza.innerHTML = '<p style="color:#eee">掃描上方 QR Code 加入我們！</p>';
+                return;
+            }
 
-                // 清除"正在連線"字樣
-                if (plaza.querySelector('p')) {
-                    const p = plaza.querySelector('p');
-                    if (p.innerText.includes("連線") || p.innerText.includes("掃描")) p.remove();
-                }
+            if (plaza.querySelector('p')) {
+                const p = plaza.querySelector('p');
+                if (p.innerText.includes("連線") || p.innerText.includes("掃描")) p.remove();
+            }
 
-                // 準備數據與排序 (依照點擊數降序，相同則依時間)
-                let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                docs.sort((a, b) => {
-                    const countA = a.clickCount || 0;
-                    const countB = b.clickCount || 0;
-                    if (countB !== countA) return countB - countA;
-                    // 時間戳可能是 null (剛寫入時)，給個預設值
-                    const timeA = a.createdAt ? a.createdAt.seconds : Date.now() / 1000;
-                    const timeB = b.createdAt ? b.createdAt.seconds : Date.now() / 1000;
-                    return timeB - timeA;
-                });
-
-                // 智能渲染 (Smart Rendering)
-                docs.forEach((data, index) => {
-                    let card = document.getElementById(`santa-${data.id}`);
-
-                    if (!card) {
-                        // 新增卡片
-                        card = createSantaCard(data);
-                        plaza.appendChild(card);
-                    } else {
-                        // 更新現有卡片 (如果需要更新名字或照片，可以在這做，這裡只更新點擊數)
-                        const badge = card.querySelector('.click-badge');
-                        if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
-                    }
-
-                    // 更新排序位置 (利用 CSS order)
-                    card.style.order = index;
-                });
-
-                // 移除已刪除的資料 (如果有刪除功能的話)
-                /* 
-                const currentIds = new Set(docs.map(d => d.id));
-                Array.from(plaza.children).forEach(child => {
-                    if (child.dataset.id && !currentIds.has(child.dataset.id)) {
-                        child.remove();
-                    }
-                });
-                */
+            let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            docs.sort((a, b) => {
+                const countA = a.clickCount || 0;
+                const countB = b.clickCount || 0;
+                if (countB !== countA) return countB - countA;
+                const timeA = a.createdAt ? a.createdAt.seconds : Date.now() / 1000;
+                const timeB = b.createdAt ? b.createdAt.seconds : Date.now() / 1000;
+                return timeB - timeA;
             });
 
-            function createSantaCard(data) {
-                const card = document.createElement('div');
-                card.className = 'santa-card';
-                card.id = `santa-${data.id}`;
-                card.dataset.id = data.id;
+            docs.forEach((data, index) => {
+                let card = document.getElementById(`santa-${data.id}`);
 
-                const assignedMsg = randomMessages[Math.floor(Math.random() * randomMessages.length)];
-                const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
-                const randomDelay = Math.random() * 2;
-                const clickCount = data.clickCount || 0;
-
-                card.innerHTML = `
-                    <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
-                        <div class="speech-bubble">${assignedMsg}</div>
-                        <div class="css-hat"></div>
-                        <img src="${data.photoBase64}" class="santa-img">
-                    </div>
-                    <div class="santa-name">${escapeHtml(data.name)}</div>
-                    <div class="click-badge">👍 ${clickCount}</div>
-                `;
-                card.onclick = function () { handlePoke(this); };
-                return card;
-            }
-
-            function handlePoke(card) {
-                if (card.classList.contains('busy')) return;
-
-                const docId = card.dataset.id;
-                if (docId) {
-                    // Optimistic UI Update (先更新畫面數字比較爽)
+                if (!card) {
+                    card = createSantaCard(data);
+                    plaza.appendChild(card);
+                } else {
                     const badge = card.querySelector('.click-badge');
-                    let current = parseInt(badge.innerText.split(' ')[1]);
-                    badge.innerText = `👍 ${current + 1}`;
-
-                    db.collection('santas').doc(docId).update({
-                        clickCount: firebase.firestore.FieldValue.increment(1)
-                    }).catch(err => console.error(err));
+                    if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
                 }
+                card.style.order = index;
+            });
+        });
 
-                const pokeMsg = "點屁呀～～";
-                const bubble = card.querySelector('.speech-bubble');
-                const originalText = bubble.innerText;
+        function createSantaCard(data) {
+            const card = document.createElement('div');
+            card.className = 'santa-card';
+            card.id = `santa-${data.id}`;
+            card.dataset.id = data.id;
 
-                // 戳的動畫
-                bubble.innerText = pokeMsg;
-                bubble.classList.add('bubble-poke');
+            const assignedMsg = randomMessages[Math.floor(Math.random() * randomMessages.length)];
+            const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
+            const randomDelay = Math.random() * 2;
+            const clickCount = data.clickCount || 0;
 
-                // 帽子稍微跳一下
-                const wrapper = card.querySelector('.santa-wrapper');
-                wrapper.style.transform = "scale(1.1)";
-                setTimeout(() => wrapper.style.transform = "", 200);
+            card.innerHTML = `
+                <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
+                    <div class="speech-bubble">${assignedMsg}</div>
+                    <div class="css-hat"></div>
+                    <img src="${data.photoBase64}" class="santa-img">
+                </div>
+                <div class="santa-name">${escapeHtml(data.name)}</div>
+                <div class="click-badge">👍 ${clickCount}</div>
+            `;
+            card.onclick = function () { handlePoke(this); };
+            return card;
+        }
 
-                setTimeout(() => {
-                    bubble.innerText = originalText;
-                    bubble.classList.remove('bubble-poke');
-                }, 1000);
+        function handlePoke(card) {
+            if (card.classList.contains('busy')) return;
+
+            const docId = card.dataset.id;
+            if (docId) {
+                const badge = card.querySelector('.click-badge');
+                let current = parseInt(badge.innerText.split(' ')[1]);
+                badge.innerText = `👍 ${current + 1}`;
+
+                db.collection('santas').doc(docId).update({
+                    clickCount: firebase.firestore.FieldValue.increment(1)
+                }).catch(err => console.error(err));
             }
 
-            // 啟動環境特效
-            window.addEventListener('resize', () => { /* 這裡不需要重繪，CSS Flex 會自動處理 */ });
-            createSnow();
-            startRandomRunAway();
-            startRandomIntrovertEvent();
-            startDiscoMode();
+            const pokeMsg = "點屁呀～～";
+            const bubble = card.querySelector('.speech-bubble');
+            const originalText = bubble.innerText;
+
+            bubble.innerText = pokeMsg;
+            bubble.classList.add('bubble-poke');
+
+            const wrapper = card.querySelector('.santa-wrapper');
+            wrapper.style.transform = "scale(1.1)";
+            setTimeout(() => wrapper.style.transform = "", 200);
+
+            setTimeout(() => {
+                bubble.innerText = originalText;
+                bubble.classList.remove('bubble-poke');
+            }, 1000);
         }
+
+        // 啟動環境特效
+        createSnow();
+        startRandomRunAway();
+        startRandomIntrovertEvent();
+        startDiscoMode();
 
         // --- Helper Functions ---
         function manualDisco() {
@@ -994,14 +1056,21 @@
         }
         function triggerDiscoEffect() {
             document.body.classList.add('disco-mode');
-            setTimeout(() => { document.body.classList.remove('disco-mode'); }, 5000);
+            // 如果想要 Disco 時音樂變大聲
+            const bgm = document.getElementById('bgm');
+            if (bgm) bgm.volume = 1.0;
+
+            setTimeout(() => {
+                document.body.classList.remove('disco-mode');
+                if (bgm) bgm.volume = 0.5; // 恢復背景音量
+            }, 5000);
         }
         function escapeHtml(text) {
             if (!text) return "Santa";
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // 隨機事件邏輯
+        // 隨機事件邏輯 (保持原樣)
         function createSnow() {
             const snowContainer = document.querySelector('.snow-container');
             for (let i = 0; i < 50; i++) {
