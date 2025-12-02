@@ -60,7 +60,7 @@
             transition: background 0.5s;
         }
 
-        /* === 🚪 入場遮罩樣式 (新增) === */
+        /* === 🚪 入場遮罩樣式 === */
         #entry-overlay {
             position: fixed;
             top: 0;
@@ -726,9 +726,8 @@
         </div>
     </div>
 
-    <!-- 🎵 新增：背景音樂 (Jingle Bells Jazz) -->
-    <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3
-" loop></audio>
+    <!-- 🎵 更新：背景音樂 & 加速播放 -->
+    <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3" loop></audio>
 
     <div class="disco-overlay"></div>
     <div class="snow-container"></div>
@@ -798,10 +797,11 @@
             const overlay = document.getElementById('entry-overlay');
             const bgm = document.getElementById('bgm');
 
-            // 嘗試播放音樂
+            // 嘗試播放音樂並加速
+            bgm.playbackRate = 1.25; // 🚀 加快速度 (1.0 = 正常, 1.25 = 稍快, 1.5 = 很快)
             bgm.volume = 0.5; // 音量設為 50%
             bgm.play().then(() => {
-                console.log("Music started!");
+                console.log("Music started at 1.25x speed!");
             }).catch(error => {
                 console.log("Auto-play blocked or failed:", error);
             });
