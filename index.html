@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- Clarity Tracking (已加入錯誤防護) -->
+    <!-- Clarity Tracking -->
     <script type="text/javascript">
         try {
             (function (c, l, a, r, i, t, y) {
@@ -112,18 +112,72 @@
             background: #ff3336;
         }
 
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(212, 36, 38, 0.7);
-            }
+        /* === 💡 狀態燈箱 (Lightbox) === */
+        #status-lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10000;
+            display: none;
+            /* 預設隱藏 */
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
 
-            70% {
-                box-shadow: 0 0 0 20px rgba(212, 36, 38, 0);
-            }
+        #status-lightbox.show {
+            display: flex;
+            opacity: 1;
+        }
 
-            100% {
-                box-shadow: 0 0 0 0 rgba(212, 36, 38, 0);
-            }
+        .lightbox-content {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 80%;
+            width: 400px;
+            text-align: center;
+            position: relative;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        #status-lightbox.show .lightbox-content {
+            transform: scale(1);
+        }
+
+        .lightbox-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            color: #2c3e50;
+            word-wrap: break-word;
+            /* 防止文字溢出 */
+        }
+
+        .lightbox-author {
+            font-size: 1rem;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .lightbox-close {
+            margin-top: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
         }
 
         /* 🕺 Disco 模式 */
@@ -165,6 +219,20 @@
 
             100% {
                 background-color: rgba(255, 0, 255, 0.3);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(212, 36, 38, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(212, 36, 38, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(212, 36, 38, 0);
             }
         }
 
@@ -678,7 +746,10 @@
             /* 預設隱藏，由動畫控制 */
             /* 使用新的循環動畫 */
             animation: bubbleCycle 13s infinite;
-            pointer-events: none;
+            pointer-events: auto;
+            /* 允許點擊氣泡 */
+            cursor: zoom-in;
+            /* 提示可以點擊放大 */
             transition: all 0.3s;
         }
 
@@ -799,7 +870,7 @@
 </head>
 
 <body>
-    <!-- 🚪 新增：入場遮罩 -->
+    <!-- 🚪 入場遮罩 -->
     <div id="entry-overlay">
         <div class="entry-content">
             <h1>🎅 聖誕派對準備開始！</h1>
@@ -809,8 +880,16 @@
         </div>
     </div>
 
-    <!-- 🎵 更新：背景音樂 & 加速播放 -->
-    <!-- 統一使用 bgm ID，並設定您指定的音樂路徑 -->
+    <!-- 💡 狀態燈箱 -->
+    <div id="status-lightbox" onclick="closeLightbox(event)">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <div id="lightbox-text" class="lightbox-text"></div>
+            <div id="lightbox-author" class="lightbox-author"></div>
+            <button class="lightbox-close" onclick="closeLightbox()">關閉</button>
+        </div>
+    </div>
+
+    <!-- 🎵 背景音樂 -->
     <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3" loop></audio>
 
     <div class="disco-overlay"></div>
@@ -847,7 +926,6 @@
             <!-- 新增：狀態輸入欄位 -->
             <input type="text" id="statusInput" maxlength="20" placeholder="輸入你的狀態 (限20字)" autocomplete="off">
 
-            <!-- 移除 capture="environment" 以允許使用者選擇相簿或相機 -->
             <input type="file" id="fileInput" accept="image/*" style="display: none;">
             <label for="fileInput" class="file-upload-btn">📷 選擇或拍攝照片</label>
 
@@ -886,6 +964,32 @@
         let db;
         if (typeof firebase !== 'undefined') {
             db = firebase.firestore();
+        }
+
+        // 💡 燈箱控制邏輯
+        function openLightbox(text, author) {
+            const lightbox = document.getElementById('status-lightbox');
+            const lightboxText = document.getElementById('lightbox-text');
+            const lightboxAuthor = document.getElementById('lightbox-author');
+
+            lightboxText.innerText = text;
+            lightboxAuthor.innerText = `- ${author} 說`;
+
+            lightbox.style.display = "flex";
+            // 延遲一點點讓 CSS transition 生效
+            setTimeout(() => {
+                lightbox.classList.add('show');
+            }, 10);
+        }
+
+        function closeLightbox(event) {
+            // 如果有點擊事件且目標不是 lightbox 本身 (例如點擊內容區域)，則不關閉
+            // 這裡已經在 HTML 的 content 區域加了 stopPropagation，所以這裡可以直接關
+            const lightbox = document.getElementById('status-lightbox');
+            lightbox.classList.remove('show');
+            setTimeout(() => {
+                lightbox.style.display = "none";
+            }, 300);
         }
 
         // 🎵 音樂與遮罩邏輯
@@ -1146,24 +1250,37 @@
 
                 // 決定語錄
                 const isCustom = (data.customStatus && data.customStatus.trim() !== "");
-                const displayMsg = isCustom ? data.customStatus : shuffledMessages[index % shuffledMessages.length];
+                const fullMsg = isCustom ? data.customStatus : shuffledMessages[index % shuffledMessages.length];
                 const persistentClass = isCustom ? "bubble-persistent" : "";
+
+                // 🔧 縮短顯示文字 (超過8字元則截斷) - 修正 Emoji 亂碼問題
+                let displayMsg = fullMsg;
+                // 使用 Array.from 正確處理 Emoji (避免把一個 Emoji 切成兩半)
+                const msgChars = Array.from(fullMsg);
+                if (msgChars.length > 8) {
+                    displayMsg = msgChars.slice(0, 8).join("") + "...";
+                }
 
                 if (card) {
                     // --- 更新現有卡片 ---
-                    // 1. 更新位置 (Append 會移動元素到最後，從而實現排序)
-                    plaza.appendChild(card);
+                    plaza.appendChild(card); // Update Position
 
-                    // 2. 更新數據
+                    // Update Data
                     const badge = card.querySelector('.click-badge');
                     if (badge) badge.innerText = `👍 ${clickCount}`;
 
                     const nameEl = card.querySelector('.santa-name');
                     if (nameEl) nameEl.innerText = escapeHtml(data.name);
 
-                    // 3. 更新氣泡 (如果正在互動中，就不干擾)
+                    // Update Bubble
                     const bubble = card.querySelector('.speech-bubble');
                     if (bubble) {
+                        // 🔧 重新綁定點擊事件以傳遞完整文字
+                        bubble.onclick = (e) => {
+                            e.stopPropagation(); // 阻止卡片旋轉
+                            openLightbox(fullMsg, data.name);
+                        };
+
                         const isBusy = bubble.classList.contains('bubble-poke') ||
                             bubble.classList.contains('bubble-shout') ||
                             bubble.classList.contains('bubble-introvert');
@@ -1200,7 +1317,17 @@
                         <div class="santa-name">${escapeHtml(data.name)}</div>
                         <div class="click-badge">👍 ${clickCount}</div>
                     `;
+
+                    // 綁定卡片點擊 (戳戳樂)
                     card.onclick = function () { handlePoke(this); };
+
+                    // 綁定氣泡點擊 (開燈箱 - 傳遞 fullMsg)
+                    const bubbleEl = card.querySelector('.speech-bubble');
+                    bubbleEl.onclick = (e) => {
+                        e.stopPropagation(); // 阻止卡片旋轉
+                        openLightbox(fullMsg, data.name);
+                    };
+
                     plaza.appendChild(card);
                 }
             });
@@ -1229,6 +1356,7 @@
 
             const pokeMsg = "點屁呀～～";
             const bubble = card.querySelector('.speech-bubble');
+            // 暫存原本文字
             const originalText = bubble.innerText;
 
             bubble.innerText = pokeMsg;
@@ -1239,6 +1367,8 @@
             setTimeout(() => wrapper.style.transform = "", 200);
 
             setTimeout(() => {
+                // 如果原本是自訂狀態，恢復時要記得保留 persistent class
+                // 這裡簡單恢復文字，因為 renderPlaza 會在下一次更新時修正 class
                 bubble.innerText = originalText;
                 bubble.classList.remove('bubble-poke');
             }, 1000);
