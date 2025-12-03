@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- Clarity Tracking -->
+    <!-- Clarity Tracking (已加入錯誤防護) -->
     <script type="text/javascript">
         try {
             (function (c, l, a, r, i, t, y) {
@@ -17,7 +17,7 @@
                 t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/uf1icbsh3d";
                 y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
             })(window, document, "clarity", "script", "uf1icbsh3d");
-        } catch (e) { console.log("Clarity load failed", e); }
+        } catch (e) { console.warn("Clarity load failed", e); }
     </script>
     <style>
         :root {
@@ -810,7 +810,7 @@
     </div>
 
     <!-- 🎵 更新：背景音樂 & 加速播放 -->
-    <!-- 統一使用 bgm ID，方便 JS 抓取 -->
+    <!-- 統一使用 bgm ID，並設定您指定的音樂路徑 -->
     <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3" loop></audio>
 
     <div class="disco-overlay"></div>
@@ -874,10 +874,18 @@
             appId: "1:1033390264974:web:7972cefdd00937b47befdf"
         };
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            try {
+                firebase.initializeApp(firebaseConfig);
+            } catch (e) {
+                console.error("Firebase init error", e);
+            }
         }
-        const db = firebase.firestore();
+
+        let db;
+        if (typeof firebase !== 'undefined') {
+            db = firebase.firestore();
+        }
 
         // 🎵 音樂與遮罩邏輯
         function enterParty() {
@@ -885,13 +893,15 @@
             const bgm = document.getElementById('bgm');
 
             // 嘗試播放音樂並加速
-            bgm.playbackRate = 1.0;
-            bgm.volume = 0.5;
-            bgm.play().then(() => {
-                console.log("Music started!");
-            }).catch(error => {
-                console.log("Auto-play blocked or failed:", error);
-            });
+            if (bgm) {
+                bgm.playbackRate = 1.0;
+                bgm.volume = 0.5;
+                bgm.play().then(() => {
+                    console.log("Music started!");
+                }).catch(error => {
+                    console.log("Auto-play blocked or failed:", error);
+                });
+            }
 
             // 淡出並移除遮罩
             overlay.style.opacity = '0';
@@ -993,6 +1003,8 @@
                     throw new Error("照片壓縮後仍然太大，請換一張試試！");
                 }
 
+                if (!db) throw new Error("Database not initialized");
+
                 await db.collection('santas').add({
                     name: name,
                     photoBase64: compressedBase64,
@@ -1051,37 +1063,45 @@
         const plaza = document.getElementById('plaza');
         let currentSnapshotDocs = [];
 
-        db.collection('santas').onSnapshot((snapshot) => {
-            if (snapshot.empty) {
-                if (plaza.innerHTML.includes("連線")) plaza.innerHTML = '<p style="color:#eee">掃描上方 QR Code 加入我們！</p>';
-                return;
-            }
+        if (db) {
+            try {
+                db.collection('santas').onSnapshot((snapshot) => {
+                    if (snapshot.empty) {
+                        if (plaza.innerHTML.includes("連線")) plaza.innerHTML = '<p style="color:#eee">掃描上方 QR Code 加入我們！</p>';
+                        return;
+                    }
 
-            if (plaza.querySelector('p')) {
-                const p = plaza.querySelector('p');
-                if (p.innerText.includes("連線") || p.innerText.includes("掃描")) p.remove();
-            }
+                    if (plaza.querySelector('p')) {
+                        const p = plaza.querySelector('p');
+                        if (p.innerText.includes("連線") || p.innerText.includes("掃描")) p.remove();
+                    }
 
-            currentSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    currentSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // 初次載入或有人數變動時，如果不滿40人，直接渲染
-            // 如果超過40人，setInterval 會接手處理大風吹
-            if (currentSnapshotDocs.length <= 40) {
-                // 簡單排序：按點擊數或時間，加強穩定性
-                currentSnapshotDocs.sort((a, b) => {
-                    // 防止 createdAt 不存在導致的 NaN 錯誤
-                    const timeA = a.createdAt ? a.createdAt.seconds : 0;
-                    const timeB = b.createdAt ? b.createdAt.seconds : 0;
-                    return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
+                    // 初次載入或有人數變動時，如果不滿40人，直接渲染
+                    // 如果超過40人，setInterval 會接手處理大風吹
+                    if (currentSnapshotDocs.length <= 40) {
+                        // 簡單排序：按點擊數或時間，加強穩定性
+                        currentSnapshotDocs.sort((a, b) => {
+                            // 防止 createdAt 不存在導致的 NaN 錯誤
+                            const timeA = a.createdAt ? a.createdAt.seconds : 0;
+                            const timeB = b.createdAt ? b.createdAt.seconds : 0;
+                            return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
+                        });
+                        renderPlaza(currentSnapshotDocs); // 直接傳入排序好的資料
+                    } else {
+                        // 首次超過40人也需要渲染一次
+                        if (plaza.children.length === 0 || plaza.children.length !== currentSnapshotDocs.length) {
+                            renderPlaza(currentSnapshotDocs);
+                        }
+                    }
+                }, error => {
+                    console.log("Snapshot error (ignore if offline)", error);
                 });
-                renderPlaza(currentSnapshotDocs); // 直接傳入排序好的資料
-            } else {
-                // 首次超過40人也需要渲染一次
-                if (plaza.children.length === 0 || plaza.children.length !== currentSnapshotDocs.length) {
-                    renderPlaza(currentSnapshotDocs);
-                }
+            } catch (e) {
+                console.error("Firestore error", e);
             }
-        });
+        }
 
         // ⏰ 30秒大風吹 (人數 > 40 才啟動)
         setInterval(() => {
@@ -1099,47 +1119,96 @@
         function renderPlaza(docs) {
             // 安全防護：如果 docs 沒有傳入，使用目前的快照
             docs = docs || currentSnapshotDocs;
+            if (!docs) return;
 
-            // 清除現有 (簡單粗暴重繪，確保順序正確)
-            plaza.innerHTML = '';
+            const plaza = document.getElementById('plaza');
+            if (!plaza) return;
 
-            // 洗牌語錄 (用於沒有自訂狀態的人)
+            // 移除 p 標籤 (Loading / QR tips)
+            const p = plaza.querySelector('p');
+            if (p && (p.innerText.includes("連線") || p.innerText.includes("掃描"))) p.remove();
+
+            // 1. 準備語錄
             let shuffledMessages = [...randomMessages];
             for (let i = shuffledMessages.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffledMessages[i], shuffledMessages[j]] = [shuffledMessages[j], shuffledMessages[i]];
             }
 
+            // 2. 標記現有的卡片 ID
+            const existingIds = new Set();
+
             docs.forEach((data, index) => {
-                const card = document.createElement('div');
-                card.className = 'santa-card';
-                card.id = `santa-${data.id}`;
-                card.dataset.id = data.id;
-
-                // 決定顯示的語錄：有自訂顯示自訂，沒有顯示隨機
-                const isCustom = (data.customStatus && data.customStatus.trim() !== "");
-                const displayMsg = isCustom ? data.customStatus : shuffledMessages[index % shuffledMessages.length];
-                // 🔧 修正：如果是自訂狀態，加上 .bubble-persistent 類別
-                const persistentClass = isCustom ? "bubble-persistent" : "";
-
-                const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
-                const randomDelay = Math.random() * 2;
+                existingIds.add(data.id);
+                let card = document.getElementById(`santa-${data.id}`);
                 const clickCount = data.clickCount || 0;
 
-                // 隨機氣泡延遲，讓顯示時間錯開 (0 ~ -13s)
-                const bubbleDelay = Math.random() * 13;
+                // 決定語錄
+                const isCustom = (data.customStatus && data.customStatus.trim() !== "");
+                const displayMsg = isCustom ? data.customStatus : shuffledMessages[index % shuffledMessages.length];
+                const persistentClass = isCustom ? "bubble-persistent" : "";
 
-                card.innerHTML = `
-                    <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
-                        <div class="speech-bubble ${persistentClass}" style="animation-delay: -${bubbleDelay}s;">${escapeHtml(displayMsg)}</div>
-                        <div class="css-hat"></div>
-                        <img src="${data.photoBase64}" class="santa-img">
-                    </div>
-                    <div class="santa-name">${escapeHtml(data.name)}</div>
-                    <div class="click-badge">👍 ${clickCount}</div>
-                `;
-                card.onclick = function () { handlePoke(this); };
-                plaza.appendChild(card);
+                if (card) {
+                    // --- 更新現有卡片 ---
+                    // 1. 更新位置 (Append 會移動元素到最後，從而實現排序)
+                    plaza.appendChild(card);
+
+                    // 2. 更新數據
+                    const badge = card.querySelector('.click-badge');
+                    if (badge) badge.innerText = `👍 ${clickCount}`;
+
+                    const nameEl = card.querySelector('.santa-name');
+                    if (nameEl) nameEl.innerText = escapeHtml(data.name);
+
+                    // 3. 更新氣泡 (如果正在互動中，就不干擾)
+                    const bubble = card.querySelector('.speech-bubble');
+                    if (bubble) {
+                        const isBusy = bubble.classList.contains('bubble-poke') ||
+                            bubble.classList.contains('bubble-shout') ||
+                            bubble.classList.contains('bubble-introvert');
+
+                        // 只有在沒忙碌時才更新文字
+                        if (!isBusy) {
+                            // 只有文字真的變了才改，避免閃爍
+                            if (bubble.innerText !== displayMsg) {
+                                bubble.innerText = escapeHtml(displayMsg);
+                            }
+                            // 更新自訂狀態樣式
+                            if (isCustom) bubble.classList.add('bubble-persistent');
+                            else bubble.classList.remove('bubble-persistent');
+                        }
+                    }
+
+                } else {
+                    // --- 創建新卡片 ---
+                    card = document.createElement('div');
+                    card.className = 'santa-card';
+                    card.id = `santa-${data.id}`;
+                    card.dataset.id = data.id;
+
+                    const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
+                    const randomDelay = Math.random() * 2;
+                    const bubbleDelay = Math.random() * 13;
+
+                    card.innerHTML = `
+                        <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
+                            <div class="speech-bubble ${persistentClass}" style="animation-delay: -${bubbleDelay}s;">${escapeHtml(displayMsg)}</div>
+                            <div class="css-hat"></div>
+                            <img src="${data.photoBase64}" class="santa-img">
+                        </div>
+                        <div class="santa-name">${escapeHtml(data.name)}</div>
+                        <div class="click-badge">👍 ${clickCount}</div>
+                    `;
+                    card.onclick = function () { handlePoke(this); };
+                    plaza.appendChild(card);
+                }
+            });
+
+            // 3. 清理已刪除的卡片
+            Array.from(plaza.children).forEach(child => {
+                if (child.classList.contains('santa-card') && !existingIds.has(child.dataset.id)) {
+                    child.remove();
+                }
             });
         }
 
@@ -1147,7 +1216,7 @@
             if (card.classList.contains('busy')) return;
 
             const docId = card.dataset.id;
-            if (docId) {
+            if (docId && db) {
                 const badge = card.querySelector('.click-badge');
                 let current = parseInt(badge.innerText.split(' ')[1]);
                 badge.innerText = `👍 ${current + 1}`;
