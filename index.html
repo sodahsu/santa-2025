@@ -998,12 +998,12 @@
             const overlay = document.getElementById('entry-overlay');
             const bgm = document.getElementById('bgm');
 
-            // 修正：設置播放速度為 1.25
+            // 修正：設置播放速度為 1.0 (預設)
             if (bgm) {
-                bgm.playbackRate = 1.25;
+                bgm.playbackRate = 1.0;
                 bgm.volume = 0.5;
                 bgm.play().then(() => {
-                    console.log("Music started with speed 1.25!");
+                    console.log("Music started with speed 1.0!");
                 }).catch(error => {
                     console.log("Auto-play blocked or failed:", error);
                 });
@@ -1168,6 +1168,7 @@
         // 大螢幕邏輯 (只在廣場模式或背景執行)
         const plaza = document.getElementById('plaza');
         let currentSnapshotDocs = [];
+        let lastRenderedIds = []; // 新增: 用於追蹤目前的排列順序
 
         if (db) {
             try {
@@ -1184,19 +1185,47 @@
 
                     currentSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                    // 初次載入或有人數變動時，如果不滿40人，直接渲染
-                    // 如果超過40人，setInterval 會接手處理大風吹
+                    // 只有在人數變動時才判斷是否渲染
                     if (currentSnapshotDocs.length <= 40) {
-                        // 簡單排序：按點擊數或時間，加強穩定性
-                        currentSnapshotDocs.sort((a, b) => {
-                            // 防止 createdAt 不存在導致的 NaN 錯誤
+                        // 1. 計算新的理想順序
+                        const sortedDocs = [...currentSnapshotDocs].sort((a, b) => {
                             const timeA = a.createdAt ? a.createdAt.seconds : 0;
                             const timeB = b.createdAt ? b.createdAt.seconds : 0;
                             return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
                         });
-                        renderPlaza(currentSnapshotDocs); // 直接傳入排序好的資料
+
+                        // 2. 檢查順序是否改變
+                        const newIds = sortedDocs.map(d => d.id);
+                        const isOrderChanged = JSON.stringify(newIds) !== JSON.stringify(lastRenderedIds);
+
+                        if (isOrderChanged) {
+                            // 順序變了 -> 重新渲染
+                            renderPlaza(sortedDocs);
+                            lastRenderedIds = newIds;
+                        } else {
+                            // 順序沒變 -> 僅更新文字 (DOM Diffing Logic)
+                            snapshot.docChanges().forEach(change => {
+                                if (change.type === 'modified') {
+                                    const data = change.doc.data();
+                                    const card = document.getElementById(`santa-${data.id}`);
+                                    if (card) {
+                                        // 更新讚數
+                                        const badge = card.querySelector('.click-badge');
+                                        if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
+                                        // 更新名字
+                                        const nameEl = card.querySelector('.santa-name');
+                                        if (nameEl) nameEl.innerText = escapeHtml(data.name);
+                                        // 更新狀態 (如果沒在互動)
+                                        const bubble = card.querySelector('.speech-bubble');
+                                        if (bubble && !bubble.classList.contains('bubble-poke')) {
+                                            // ... 更新氣泡文字邏輯 (略，保持現狀即可) ...
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     } else {
-                        // 首次超過40人也需要渲染一次
+                        // 超過40人，首次載入或結構改變時渲染，之後交給 setInterval
                         if (plaza.children.length === 0 || plaza.children.length !== currentSnapshotDocs.length) {
                             renderPlaza(currentSnapshotDocs);
                         }
@@ -1219,6 +1248,7 @@
                     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
                 }
                 renderPlaza(shuffled);
+                lastRenderedIds = shuffled.map(d => d.id); // 更新ID列表
             }
         }, 30000);
 
@@ -1342,22 +1372,26 @@
         }
 
         function handlePoke(card) {
+            // 修正：現在只在本地更新讚數，不觸發 renderPlaza
             if (card.classList.contains('busy')) return;
+            card.classList.add('busy'); // 鎖定卡片
 
             const docId = card.dataset.id;
-            if (docId && db) {
-                const badge = card.querySelector('.click-badge');
-                let current = parseInt(badge.innerText.split(' ')[1]);
-                badge.innerText = `👍 ${current + 1}`;
+            const badge = card.querySelector('.click-badge');
 
+            // 1. 本地更新讚數 (快速響應)
+            let current = parseInt(badge.innerText.split(' ')[1]);
+            badge.innerText = `👍 ${current + 1}`;
+
+            // 2. 異步上傳到 Firebase
+            if (docId && db) {
                 db.collection('santas').doc(docId).update({
                     clickCount: firebase.firestore.FieldValue.increment(1)
-                }).catch(err => console.error(err));
+                }).catch(err => console.error("Firebase update failed:", err));
             }
 
             const pokeMsg = "點屁呀～～";
             const bubble = card.querySelector('.speech-bubble');
-            // 暫存原本文字
             const originalText = bubble.innerText;
 
             bubble.innerText = pokeMsg;
@@ -1365,13 +1399,14 @@
 
             const wrapper = card.querySelector('.santa-wrapper');
             wrapper.style.transform = "scale(1.1)";
-            setTimeout(() => wrapper.style.transform = "", 200);
 
+            // 延遲 1000ms 後才移除特效
             setTimeout(() => {
-                // 如果原本是自訂狀態，恢復時要記得保留 persistent class
-                // 這裡簡單恢復文字，因為 renderPlaza 會在下一次更新時修正 class
+                // 恢復動畫和氣泡
+                wrapper.style.transform = "";
                 bubble.innerText = originalText;
                 bubble.classList.remove('bubble-poke');
+                card.classList.remove('busy'); // 解鎖卡片
             }, 1000);
         }
 
@@ -1392,8 +1427,8 @@
             // 播放音樂 (使用 bgm 元素)
             const bgm = document.getElementById('bgm');
             if (bgm) {
-                // 修正：Disco 模式設定播放速度為 1.5
-                bgm.playbackRate = 1.5;
+                // 修正：Disco 模式設定播放速度為 1.25
+                bgm.playbackRate = 1.25;
                 // 如果音樂未播放，嘗試播放
                 if (bgm.paused) {
                     bgm.currentTime = 0;
@@ -1403,9 +1438,9 @@
 
             setTimeout(() => {
                 document.body.classList.remove('disco-mode');
-                // 修正：Disco 結束後恢復正常速度 1.25
+                // 修正：Disco 結束後恢復正常速度 1.0
                 if (bgm) {
-                    bgm.playbackRate = 1.25;
+                    bgm.playbackRate = 1.0;
                 }
                 // 可選擇停止音樂，或讓它繼續當背景音
                 // bgm.pause();
