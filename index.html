@@ -11,11 +11,13 @@
 
     <!-- Clarity Tracking -->
     <script type="text/javascript">
-        (function (c, l, a, r, i, t, y) {
-            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
-            t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/uf1icbsh3d";
-            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-        })(window, document, "clarity", "script", "uf1icbsh3d");
+        try {
+            (function (c, l, a, r, i, t, y) {
+                c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+                t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/uf1icbsh3d";
+                y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+            })(window, document, "clarity", "script", "uf1icbsh3d");
+        } catch (e) { console.log("Clarity load failed", e); }
     </script>
     <style>
         :root {
@@ -284,7 +286,7 @@
         .mobile-card input[type="text"] {
             width: 90%;
             padding: 15px;
-            margin: 15px 0;
+            margin: 10px 0;
             border: 2px solid #eee;
             border-radius: 12px;
             font-size: 1.1rem;
@@ -506,6 +508,25 @@
             animation-duration: 0.5s !important;
         }
 
+        @keyframes spin-crazy {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+
+            50% {
+                transform: rotate(180deg) scale(1.2);
+            }
+
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        .mode-spin {
+            animation: spin-crazy 0.5s ease-in-out !important;
+            z-index: 100;
+        }
+
         @keyframes run-away-right {
             0% {
                 transform: translateX(0) scale(1) skewX(0);
@@ -518,27 +539,6 @@
             100% {
                 transform: translateX(2000px) scale(0.8) skewX(45deg);
                 opacity: 0;
-            }
-        }
-
-        @keyframes drop-from-sky {
-            0% {
-                transform: translateY(-100vh);
-                opacity: 0;
-            }
-
-            60% {
-                transform: translateY(10px);
-                opacity: 1;
-            }
-
-            80% {
-                transform: translateY(-5px);
-            }
-
-            100% {
-                transform: translateY(0);
-                opacity: 1;
             }
         }
 
@@ -588,6 +588,27 @@
             }
         }
 
+        @keyframes drop-from-sky {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
+
+            60% {
+                transform: translateY(10px);
+                opacity: 1;
+            }
+
+            80% {
+                transform: translateY(-5px);
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         .mode-run-away {
             animation: run-away-right 0.8s ease-in forwards !important;
             z-index: 999;
@@ -606,6 +627,39 @@
             z-index: 2000 !important;
         }
 
+        /* 💬 新增: 氣泡循環動畫 (Show 10s, Hide 3s) */
+        @keyframes bubbleCycle {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.5) translateY(10px);
+            }
+
+            4% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1) translateY(0);
+            }
+
+            /* 0.5s 淡入 */
+            77% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1) translateY(0);
+            }
+
+            /* 10s 顯示 */
+            81% {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.5) translateY(10px);
+            }
+
+            /* 10.5s 淡出 */
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.5) translateY(10px);
+            }
+
+            /* 13s 結束 */
+        }
+
         .speech-bubble {
             position: absolute;
             top: -70px;
@@ -621,8 +675,9 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             z-index: 10;
             opacity: 0;
-            animation: bubblePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            animation-delay: 0.3s;
+            /* 預設隱藏，由動畫控制 */
+            /* 使用新的循環動畫 */
+            animation: bubbleCycle 13s infinite;
             pointer-events: none;
             transition: all 0.3s;
         }
@@ -636,6 +691,17 @@
             border-width: 6px 6px 0;
             border-style: solid;
             border-color: inherit transparent transparent transparent;
+        }
+
+        /* 🔧 修正：加入 .bubble-persistent (自訂狀態) 到強制顯示清單 */
+        .bubble-shout,
+        .bubble-introvert,
+        .bubble-poke,
+        .bubble-persistent {
+            opacity: 1 !important;
+            /* 強制顯示 */
+            animation: none !important;
+            /* 暫停循環 */
         }
 
         .bubble-shout {
@@ -674,18 +740,6 @@
             border-top-color: #ff7675 !important;
         }
 
-        @keyframes bubblePop {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) scale(0.5) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(-50%) scale(1) translateY(0);
-            }
-        }
-
         .snow-container {
             position: fixed;
             top: 0;
@@ -712,6 +766,35 @@
                 opacity: 0.3;
             }
         }
+
+        .snow-pile {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: radial-gradient(circle at 20% 100%, white 30%, transparent 31%), radial-gradient(circle at 50% 100%, white 40%, transparent 41%), radial-gradient(circle at 80% 100%, white 35%, transparent 36%);
+            background-size: 150% 100%;
+            background-repeat: no-repeat;
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(4px);
+            opacity: 0.9;
+        }
+
+        .snow-pile::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: -10%;
+            width: 120%;
+            height: 80px;
+            background: radial-gradient(circle at 10% 100%, white 25%, transparent 26%), radial-gradient(circle at 40% 100%, white 35%, transparent 36%), radial-gradient(circle at 70% 100%, white 30%, transparent 31%), radial-gradient(circle at 95% 100%, white 28%, transparent 29%);
+            background-size: 150% 100%;
+            background-repeat: no-repeat;
+            filter: blur(6px);
+            opacity: 0.7;
+        }
     </style>
 </head>
 
@@ -727,6 +810,7 @@
     </div>
 
     <!-- 🎵 更新：背景音樂 & 加速播放 -->
+    <!-- 統一使用 bgm ID，方便 JS 抓取 -->
     <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3" loop></audio>
 
     <div class="disco-overlay"></div>
@@ -760,6 +844,9 @@
             <p>上傳一張大頭照，你就會出現在大螢幕上喔！</p>
 
             <input type="text" id="nameInput" placeholder="輸入你的暱稱 (例如: Andy)" autocomplete="off">
+            <!-- 新增：狀態輸入欄位 -->
+            <input type="text" id="statusInput" maxlength="20" placeholder="輸入你的狀態 (限20字)" autocomplete="off">
+
             <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
             <label for="fileInput" class="file-upload-btn">📷 選擇或拍攝照片</label>
 
@@ -798,10 +885,10 @@
             const bgm = document.getElementById('bgm');
 
             // 嘗試播放音樂並加速
-            bgm.playbackRate = 1.25; // 🚀 加快速度 (1.0 = 正常, 1.25 = 稍快, 1.5 = 很快)
-            bgm.volume = 0.5; // 音量設為 50%
+            bgm.playbackRate = 1.0;
+            bgm.volume = 0.5;
             bgm.play().then(() => {
-                console.log("Music started at 1.25x speed!");
+                console.log("Music started!");
             }).catch(error => {
                 console.log("Auto-play blocked or failed:", error);
             });
@@ -821,12 +908,15 @@
             if (target === 'upload') {
                 plazaView.classList.remove('active');
                 uploadView.classList.add('active');
-                // 選擇性：更新網址但不重新整理
-                history.pushState({ mode: 'upload' }, '', '?mode=upload');
+                try {
+                    history.pushState({ mode: 'upload' }, '', '?mode=upload');
+                } catch (e) { }
             } else {
                 uploadView.classList.remove('active');
                 plazaView.classList.add('active');
-                history.pushState({ mode: 'plaza' }, '', window.location.pathname);
+                try {
+                    history.pushState({ mode: 'plaza' }, '', window.location.pathname);
+                } catch (e) { }
             }
         }
 
@@ -855,10 +945,12 @@
             "其實我是外星人 👽", "地球好危險 🌍", "我要冬眠了 🐻", "有人看到我的腦袋嗎？ 🧠",
             "我愛工作 (才怪) 🤥", "今天便當吃什麼？ 🍱"
         ];
+        const pokeMessages = ["哎呦! 😵", "別戳我! 😠", "暈了暈了 💫", "我要加薪! 💰", "幹嘛啦? 😒", "好癢喔! 😂", "Merry Xmas! 🎄", "給糖吃! 🍬", "我是老闆! 👔"];
         const danceClasses = ['dance-1', 'dance-2', 'dance-3'];
 
         const fileInput = document.getElementById('fileInput');
         const nameInput = document.getElementById('nameInput');
+        const statusInput = document.getElementById('statusInput');
         const uploadBtn = document.getElementById('uploadBtn');
         const statusMsg = document.getElementById('statusMsg');
         const previewImg = document.getElementById('preview-img');
@@ -885,6 +977,8 @@
         // 上傳功能
         async function compressAndUpload() {
             const name = nameInput.value.trim();
+            const customStatus = statusInput.value.trim(); // 取得自訂狀態
+
             if (!name || !selectedFile) { statusMsg.innerText = "❌ 請輸入名字並選擇照片！"; return; }
 
             uploadBtn.disabled = true;
@@ -902,6 +996,7 @@
                 await db.collection('santas').add({
                     name: name,
                     photoBase64: compressedBase64,
+                    customStatus: customStatus, // 存入自訂狀態
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     clickCount: 0
                 });
@@ -909,7 +1004,9 @@
                 statusMsg.innerText = "✅ 發送成功！請看大螢幕！";
 
                 setTimeout(() => {
-                    nameInput.value = ''; fileInput.value = '';
+                    nameInput.value = '';
+                    fileInput.value = '';
+                    statusInput.value = '';
                     previewContainer.style.display = 'none';
                     selectedFile = null;
                     uploadBtn.disabled = false;
@@ -952,6 +1049,7 @@
 
         // 大螢幕邏輯 (只在廣場模式或背景執行)
         const plaza = document.getElementById('plaza');
+        let currentSnapshotDocs = [];
 
         db.collection('santas').onSnapshot((snapshot) => {
             if (snapshot.empty) {
@@ -964,52 +1062,85 @@
                 if (p.innerText.includes("連線") || p.innerText.includes("掃描")) p.remove();
             }
 
-            let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            docs.sort((a, b) => {
-                const countA = a.clickCount || 0;
-                const countB = b.clickCount || 0;
-                if (countB !== countA) return countB - countA;
-                const timeA = a.createdAt ? a.createdAt.seconds : Date.now() / 1000;
-                const timeB = b.createdAt ? b.createdAt.seconds : Date.now() / 1000;
-                return timeB - timeA;
-            });
+            currentSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            docs.forEach((data, index) => {
-                let card = document.getElementById(`santa-${data.id}`);
-
-                if (!card) {
-                    card = createSantaCard(data);
-                    plaza.appendChild(card);
-                } else {
-                    const badge = card.querySelector('.click-badge');
-                    if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
+            // 初次載入或有人數變動時，如果不滿40人，直接渲染
+            // 如果超過40人，setInterval 會接手處理大風吹
+            if (currentSnapshotDocs.length <= 40) {
+                // 簡單排序：按點擊數或時間，加強穩定性
+                currentSnapshotDocs.sort((a, b) => {
+                    // 防止 createdAt 不存在導致的 NaN 錯誤
+                    const timeA = a.createdAt ? a.createdAt.seconds : 0;
+                    const timeB = b.createdAt ? b.createdAt.seconds : 0;
+                    return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
+                });
+                renderPlaza(currentSnapshotDocs); // 直接傳入排序好的資料
+            } else {
+                // 首次超過40人也需要渲染一次
+                if (plaza.children.length === 0 || plaza.children.length !== currentSnapshotDocs.length) {
+                    renderPlaza(currentSnapshotDocs);
                 }
-                card.style.order = index;
-            });
+            }
         });
 
-        function createSantaCard(data) {
-            const card = document.createElement('div');
-            card.className = 'santa-card';
-            card.id = `santa-${data.id}`;
-            card.dataset.id = data.id;
+        // ⏰ 30秒大風吹 (人數 > 40 才啟動)
+        setInterval(() => {
+            if (currentSnapshotDocs.length > 40) {
+                // 洗牌並重新渲染
+                let shuffled = [...currentSnapshotDocs];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                renderPlaza(shuffled);
+            }
+        }, 30000);
 
-            const assignedMsg = randomMessages[Math.floor(Math.random() * randomMessages.length)];
-            const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
-            const randomDelay = Math.random() * 2;
-            const clickCount = data.clickCount || 0;
+        function renderPlaza(docs) {
+            // 安全防護：如果 docs 沒有傳入，使用目前的快照
+            docs = docs || currentSnapshotDocs;
 
-            card.innerHTML = `
-                <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
-                    <div class="speech-bubble">${assignedMsg}</div>
-                    <div class="css-hat"></div>
-                    <img src="${data.photoBase64}" class="santa-img">
-                </div>
-                <div class="santa-name">${escapeHtml(data.name)}</div>
-                <div class="click-badge">👍 ${clickCount}</div>
-            `;
-            card.onclick = function () { handlePoke(this); };
-            return card;
+            // 清除現有 (簡單粗暴重繪，確保順序正確)
+            plaza.innerHTML = '';
+
+            // 洗牌語錄 (用於沒有自訂狀態的人)
+            let shuffledMessages = [...randomMessages];
+            for (let i = shuffledMessages.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledMessages[i], shuffledMessages[j]] = [shuffledMessages[j], shuffledMessages[i]];
+            }
+
+            docs.forEach((data, index) => {
+                const card = document.createElement('div');
+                card.className = 'santa-card';
+                card.id = `santa-${data.id}`;
+                card.dataset.id = data.id;
+
+                // 決定顯示的語錄：有自訂顯示自訂，沒有顯示隨機
+                const isCustom = (data.customStatus && data.customStatus.trim() !== "");
+                const displayMsg = isCustom ? data.customStatus : shuffledMessages[index % shuffledMessages.length];
+                // 🔧 修正：如果是自訂狀態，加上 .bubble-persistent 類別
+                const persistentClass = isCustom ? "bubble-persistent" : "";
+
+                const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
+                const randomDelay = Math.random() * 2;
+                const clickCount = data.clickCount || 0;
+
+                // 隨機氣泡延遲，讓顯示時間錯開 (0 ~ -13s)
+                const bubbleDelay = Math.random() * 13;
+
+                card.innerHTML = `
+                    <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
+                        <div class="speech-bubble ${persistentClass}" style="animation-delay: -${bubbleDelay}s;">${escapeHtml(displayMsg)}</div>
+                        <div class="css-hat"></div>
+                        <img src="${data.photoBase64}" class="santa-img">
+                    </div>
+                    <div class="santa-name">${escapeHtml(data.name)}</div>
+                    <div class="click-badge">👍 ${clickCount}</div>
+                `;
+                card.onclick = function () { handlePoke(this); };
+                plaza.appendChild(card);
+            });
         }
 
         function handlePoke(card) {
@@ -1047,6 +1178,7 @@
         createSnow();
         startRandomRunAway();
         startRandomIntrovertEvent();
+        // 啟動 Disco 模式 (隨機或手動觸發)
         startDiscoMode();
 
         // --- Helper Functions ---
@@ -1056,13 +1188,20 @@
         }
         function triggerDiscoEffect() {
             document.body.classList.add('disco-mode');
-            // 如果想要 Disco 時音樂變大聲
+            // 播放音樂 (使用 bgm 元素)
             const bgm = document.getElementById('bgm');
-            if (bgm) bgm.volume = 1.0;
+            if (bgm) {
+                // 如果音樂未播放，嘗試播放
+                if (bgm.paused) {
+                    bgm.currentTime = 0;
+                    bgm.play().catch(e => console.log("播放失敗 (請先與網頁互動)", e));
+                }
+            }
 
             setTimeout(() => {
                 document.body.classList.remove('disco-mode');
-                if (bgm) bgm.volume = 0.5; // 恢復背景音量
+                // 可選擇停止音樂，或讓它繼續當背景音
+                // bgm.pause();
             }, 5000);
         }
         function escapeHtml(text) {
@@ -1136,6 +1275,12 @@
             const nextRun = Math.random() * 40000 + 30000;
             setTimeout(() => { triggerDiscoEffect(); startDiscoMode(); }, nextRun);
         }
+
+        // 🔧 修正 1: 監聽視窗大小改變，自動調整顯示數量
+        // 重要：這行要傳入參數，否則會報錯
+        window.addEventListener('resize', () => {
+            renderPlaza(currentSnapshotDocs);
+        });
     </script>
 </body>
 
