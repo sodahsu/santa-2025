@@ -890,6 +890,7 @@
     </div>
 
     <!-- 🎵 背景音樂 -->
+    <!-- 修正音樂路徑為您指定的連結 -->
     <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3" loop></audio>
 
     <div class="disco-overlay"></div>
@@ -997,12 +998,12 @@
             const overlay = document.getElementById('entry-overlay');
             const bgm = document.getElementById('bgm');
 
-            // 嘗試播放音樂並加速
+            // 修正：設置播放速度為 1.25
             if (bgm) {
-                bgm.playbackRate = 1.0;
+                bgm.playbackRate = 1.25;
                 bgm.volume = 0.5;
                 bgm.play().then(() => {
-                    console.log("Music started!");
+                    console.log("Music started with speed 1.25!");
                 }).catch(error => {
                     console.log("Auto-play blocked or failed:", error);
                 });
@@ -1262,7 +1263,7 @@
                 }
 
                 if (card) {
-                    // --- 更新現有卡片 ---
+                    // --- 更新現有卡片 (DOM Diffing) ---
                     plaza.appendChild(card); // Update Position
 
                     // Update Data
@@ -1391,6 +1392,8 @@
             // 播放音樂 (使用 bgm 元素)
             const bgm = document.getElementById('bgm');
             if (bgm) {
+                // 修正：Disco 模式設定播放速度為 1.5
+                bgm.playbackRate = 1.5;
                 // 如果音樂未播放，嘗試播放
                 if (bgm.paused) {
                     bgm.currentTime = 0;
@@ -1400,6 +1403,10 @@
 
             setTimeout(() => {
                 document.body.classList.remove('disco-mode');
+                // 修正：Disco 結束後恢復正常速度 1.25
+                if (bgm) {
+                    bgm.playbackRate = 1.25;
+                }
                 // 可選擇停止音樂，或讓它繼續當背景音
                 // bgm.pause();
             }, 5000);
