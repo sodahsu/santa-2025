@@ -25,6 +25,7 @@
             --bg: #1a1c29;
             --text: #fff;
             --card-bg: rgba(255, 255, 255, 0.1);
+            --gold: #ffd700;
         }
 
         html {
@@ -34,8 +35,10 @@
 
         body {
             font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-            background-image: url('bg.jpg');
-            background-repeat: no-repeat;
+            /* 背景防呆：若圖片讀不到，顯示漸層 */
+            background-color: var(--bg);
+            background-image: url('bg.jpg'), linear-gradient(135deg, #1a1c29 0%, #300000 100%);
+            background-repeat: no-repeat, no-repeat;
             background-position: center center;
             background-attachment: fixed;
             background-size: cover;
@@ -62,20 +65,54 @@
             transition: background 0.5s;
         }
 
-        /* === 🚪 入場遮罩樣式 === */
+        /* === 🎵 音樂控制按鈕 === */
+        .music-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            /* 確保在雪花和大多數元素之上 */
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 1.5rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            /* 避免被 iOS 選取反白 */
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .music-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .music-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* === 🚪 入場遮罩 === */
         #entry-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
             transition: opacity 0.8s ease;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
         }
 
         .entry-content {
@@ -87,11 +124,7 @@
             border-radius: 20px;
             box-shadow: 0 0 30px rgba(212, 36, 38, 0.5);
             animation: pulse 2s infinite;
-        }
-
-        .entry-content h1 {
-            font-size: 2rem;
-            margin-bottom: 20px;
+            max-width: 90%;
         }
 
         #enterBtn {
@@ -104,15 +137,15 @@
             cursor: pointer;
             font-weight: bold;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s;
+            transition: transform 0.2s, background 0.2s;
         }
 
         #enterBtn:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
             background: #ff3336;
         }
 
-        /* === 💡 狀態燈箱 (Lightbox) === */
+        /* === 💡 燈箱 === */
         #status-lightbox {
             position: fixed;
             top: 0;
@@ -122,7 +155,6 @@
             background: rgba(0, 0, 0, 0.85);
             z-index: 10000;
             display: none;
-            /* 預設隱藏 */
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(5px);
@@ -160,7 +192,6 @@
             line-height: 1.4;
             color: #2c3e50;
             word-wrap: break-word;
-            /* 防止文字溢出 */
         }
 
         .lightbox-author {
@@ -180,7 +211,7 @@
             cursor: pointer;
         }
 
-        /* 🕺 Disco 模式 */
+        /* === 🕺 Disco 模式 === */
         body.disco-mode::before {
             background: rgba(0, 0, 0, 0.8);
         }
@@ -236,7 +267,7 @@
             }
         }
 
-        /* 📱 頁面切換控制 */
+        /* === 📱 頁面切換控制 === */
         .view-section {
             display: none;
             width: 100%;
@@ -250,7 +281,7 @@
             display: flex;
         }
 
-        /* === 🖥️ 廣場顯示區樣式 === */
+        /* === 🖥️ 廣場顯示區 === */
         #plaza-view h1 {
             margin-top: 20px;
             font-size: 2.5rem;
@@ -287,10 +318,12 @@
             width: 150px;
             height: 150px;
             border-radius: 5px;
+            display: block;
+            margin: 0 auto;
         }
 
         .qr-card p {
-            margin: 5px 0 0;
+            margin: 10px 0 0;
             font-weight: bold;
             font-size: 0.9rem;
         }
@@ -298,9 +331,11 @@
         .btn-group {
             margin-bottom: 50px;
             z-index: 60;
+            display: flex;
+            gap: 15px;
         }
 
-        button#discoBtn {
+        button.action-btn {
             background: #8e44ad;
             color: white;
             border: none;
@@ -313,7 +348,7 @@
             transition: transform 0.2s;
         }
 
-        button#discoBtn:hover {
+        button.action-btn:hover {
             transform: translateY(-2px);
             background: #9b59b6;
         }
@@ -329,7 +364,7 @@
             z-index: 1;
         }
 
-        /* === 📱 手機上傳區樣式 === */
+        /* === 📱 手機上傳區 === */
         #upload-view {
             justify-content: center;
             min-height: 90vh;
@@ -344,11 +379,14 @@
             max-width: 400px;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 10;
         }
 
         .mobile-card h2 {
             margin-top: 0;
             color: var(--primary);
+            font-size: 1.6rem;
         }
 
         .mobile-card input[type="text"] {
@@ -360,6 +398,7 @@
             font-size: 1.1rem;
             outline: none;
             transition: border 0.3s;
+            box-sizing: border-box;
         }
 
         .mobile-card input[type="text"]:focus {
@@ -377,11 +416,13 @@
             cursor: pointer;
             font-weight: bold;
             border: 2px dashed #ccc;
+            transition: all 0.2s;
+            box-sizing: border-box;
         }
 
         .file-upload-btn:hover {
             background: #e4e6e9;
-            border-color: #999;
+            border-color: var(--primary);
         }
 
         button#uploadBtn {
@@ -396,11 +437,17 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(212, 36, 38, 0.3);
+            transition: transform 0.1s;
+        }
+
+        button#uploadBtn:active {
+            transform: scale(0.98);
         }
 
         button#uploadBtn:disabled {
             background: #ccc;
             box-shadow: none;
+            cursor: not-allowed;
         }
 
         #preview-container {
@@ -408,19 +455,19 @@
             display: none;
         }
 
-        /* === 卡片與動畫 === */
+        /* === 卡片基本樣式 === */
         .santa-card {
             display: flex;
             flex-direction: column;
             align-items: center;
             animation: popIn 0.5s ease-out;
             position: relative;
-            transition: order 0.5s ease, transform 0.3s;
+            transition: transform 0.3s;
             cursor: pointer;
             width: 120px;
             margin: 10px;
             will-change: transform;
-            /* 🚀 效能優化：預先準備動畫渲染 */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .santa-card:active {
@@ -436,6 +483,10 @@
             padding: 2px 8px;
             border-radius: 10px;
             transition: all 0.3s;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .click-badge {
@@ -479,6 +530,146 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
 
+        /* === 飾品系統 === */
+        .accessory {
+            position: absolute;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* 1. 麋鹿角 */
+        .accessory.antlers {
+            width: 80px;
+            height: 40px;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .accessory.antlers::before,
+        .accessory.antlers::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 8px;
+            height: 30px;
+            background: #8d6e63;
+            border-radius: 5px;
+        }
+
+        .accessory.antlers::before {
+            left: 15px;
+            transform: rotate(-30deg);
+        }
+
+        .accessory.antlers::after {
+            right: 15px;
+            transform: rotate(30deg);
+        }
+
+        .accessory.antlers .branch {
+            position: absolute;
+            width: 6px;
+            height: 15px;
+            background: #8d6e63;
+            border-radius: 5px;
+        }
+
+        .accessory.antlers .branch.left {
+            left: 10px;
+            top: 10px;
+            transform: rotate(-60deg);
+        }
+
+        .accessory.antlers .branch.right {
+            right: 10px;
+            top: 10px;
+            transform: rotate(60deg);
+        }
+
+        /* 2. 天使光環 */
+        .accessory.halo {
+            width: 60px;
+            height: 20px;
+            border: 4px solid #f1c40f;
+            border-radius: 50%;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%) rotateX(60deg);
+            box-shadow: 0 0 10px #f1c40f, 0 0 20px #f1c40f inset;
+            animation: floatHalo 2s ease-in-out infinite;
+        }
+
+        @keyframes floatHalo {
+
+            0%,
+            100% {
+                transform: translateX(-50%) rotateX(60deg) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) rotateX(60deg) translateY(-5px);
+            }
+        }
+
+        /* 3. 精靈帽 */
+        .accessory.elf {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 50px solid #2ecc71;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-10deg);
+        }
+
+        .accessory.elf::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -25px;
+            width: 10px;
+            height: 10px;
+            background: #e74c3c;
+            border-radius: 50%;
+        }
+
+        /* 4. 黃金傳說 (扭蛋抽到的) */
+        .santa-card.gold-mode .santa-img {
+            border-color: #ffd700 !important;
+            box-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700 !important;
+            filter: brightness(1.1) contrast(1.1);
+        }
+
+        .accessory.crown {
+            font-size: 40px;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-shadow: 0 0 10px gold;
+            animation: bounceCrown 1s infinite alternate;
+        }
+
+        @keyframes bounceCrown {
+            from {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            to {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        .santa-card.gold-mode .santa-name {
+            background: linear-gradient(45deg, #ffd700, #b8860b);
+            color: #fff;
+            border: 1px solid #fff;
+        }
+
+        /* === 帽子樣式邏輯 === */
+
+        /* A. 普通聖誕紅帽 (預設) */
         .css-hat {
             position: absolute;
             top: -18px;
@@ -491,6 +682,7 @@
             z-index: 2;
         }
 
+        /* 普通帽子的球 */
         .css-hat::after {
             content: '';
             position: absolute;
@@ -502,6 +694,7 @@
             border-radius: 50%;
         }
 
+        /* 普通帽子的帽簷 */
         .css-hat::before {
             content: '';
             position: absolute;
@@ -514,60 +707,81 @@
             border-radius: 10px;
         }
 
-        /* 👑 第一名：三層大高帽樣式 */
+        /* 如果有 accessory (例如麋鹿角)，隱藏普通紅帽 */
+        .has-accessory .css-hat:not(.special) {
+            display: none;
+        }
+
+        /* === 👑 第一名專屬樣式 (黃金大帽) === */
+
+        /* 1. 帽子本體：改回原本形狀，但變大、變黃 */
         .css-hat.special {
-            width: 70px;
-            height: 60px;
-            border-radius: 5px;
-            background:
-                linear-gradient(to bottom, #FFD700, #FDB931) top center / 50% 30% no-repeat,
-                linear-gradient(to bottom, #d42426, #ff3336) center center / 75% 35% no-repeat,
-                linear-gradient(to bottom, #FFD700, #FDB931) bottom center / 100% 35% no-repeat;
-            top: -45px;
-            transform: translateX(-50%) rotate(-5deg);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            /* 顏色改為金黃色 */
+            background: var(--gold);
+            /* 尺寸放大 (原尺寸: 60px / 35px) */
+            width: 85px;
+            height: 50px;
+            /* 位置調整 (因為變大了，要往上移一點才不會蓋住眼睛) */
+            top: -30px;
+            /* 繼承原本的圓頂形狀 */
+            border-radius: 50px 50px 0 0;
+
+            /* 其他細節 */
+            z-index: 20;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            /* 加一點光暈 */
         }
 
-        /* 文字：第一名 */
+        /* 2. 帽簷 (白色那條)：依比例放大 */
         .css-hat.special::before {
-            content: '第一名';
-            position: absolute;
-            top: 50%;
-            bottom: auto;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            height: auto;
-            background: transparent;
-            color: #fff;
-            font-size: 12px;
-            font-weight: bold;
-            text-align: center;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-            z-index: 6;
-            border-radius: 0;
-        }
-
-        /* 頂部裝飾球 */
-        .css-hat.special::after {
-            content: '';
-            position: absolute;
-            top: -8px;
-            right: auto;
+            /* 原尺寸: 70px / 12px */
+            width: 100px;
+            height: 16px;
+            bottom: -10px;
+            background: #fff;
             left: 50%;
             transform: translateX(-50%);
-            width: 16px;
-            height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #fff;
-            z-index: 6;
+            border-radius: 10px;
         }
 
+        /* 3. 帽球 (白色毛球)：依比例放大 */
+        .css-hat.special::after {
+            /* 原尺寸: 22px */
+            width: 30px;
+            height: 30px;
+            top: -15px;
+            right: -15px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: none;
+        }
+
+        /* 4. 王者大頭貼框：保留原本的金色發光特效 */
+        .css-hat.special~.santa-img {
+            border: 4px solid var(--gold) !important;
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.8) !important;
+            animation: winner-glow 2s infinite alternate;
+            z-index: 10;
+        }
+
+        @keyframes winner-glow {
+            from {
+                box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+                border-color: #e6c200;
+            }
+
+            to {
+                box-shadow: 0 0 45px rgba(255, 215, 0, 1);
+                border-color: #fff;
+            }
+        }
+
+        /* 當第一名時，隱藏普通飾品避免穿模 */
+        .has-accessory:has(.css-hat.special) .accessory {
+            display: none;
+        }
+
+        /* === 互動動畫 === */
         @keyframes dance-sway {
 
             0%,
@@ -632,25 +846,6 @@
             animation-duration: 0.5s !important;
         }
 
-        @keyframes spin-crazy {
-            0% {
-                transform: rotate(0deg) scale(1);
-            }
-
-            50% {
-                transform: rotate(180deg) scale(1.2);
-            }
-
-            100% {
-                transform: rotate(360deg) scale(1);
-            }
-        }
-
-        .mode-spin {
-            animation: spin-crazy 0.5s ease-in-out !important;
-            z-index: 100;
-        }
-
         @keyframes run-away-right {
             0% {
                 transform: translateX(0) scale(1) skewX(0);
@@ -663,52 +858,6 @@
             100% {
                 transform: translateX(2000px) scale(0.8) skewX(45deg);
                 opacity: 0;
-            }
-        }
-
-        @keyframes shake-panic {
-            0% {
-                transform: translate(1px, 1px) rotate(0deg);
-            }
-
-            10% {
-                transform: translate(-1px, -2px) rotate(-1deg);
-            }
-
-            20% {
-                transform: translate(-3px, 0px) rotate(1deg);
-            }
-
-            30% {
-                transform: translate(3px, 2px) rotate(0deg);
-            }
-
-            40% {
-                transform: translate(1px, -1px) rotate(1deg);
-            }
-
-            50% {
-                transform: translate(-1px, 2px) rotate(-1deg);
-            }
-
-            60% {
-                transform: translate(-3px, 1px) rotate(0deg);
-            }
-
-            70% {
-                transform: translate(3px, 1px) rotate(-1deg);
-            }
-
-            80% {
-                transform: translate(-1px, -1px) rotate(1deg);
-            }
-
-            90% {
-                transform: translate(1px, 2px) rotate(0deg);
-            }
-
-            100% {
-                transform: translate(1px, -2px) rotate(-1deg);
             }
         }
 
@@ -733,6 +882,24 @@
             }
         }
 
+        @keyframes shake-panic {
+            0% {
+                transform: translate(1px, 1px) rotate(0deg);
+            }
+
+            10% {
+                transform: translate(-1px, -2px) rotate(-1deg);
+            }
+
+            50% {
+                transform: translate(-1px, 2px) rotate(-1deg);
+            }
+
+            100% {
+                transform: translate(1px, -2px) rotate(-1deg);
+            }
+        }
+
         .mode-run-away {
             animation: run-away-right 0.8s ease-in forwards !important;
             z-index: 999;
@@ -751,7 +918,7 @@
             z-index: 2000 !important;
         }
 
-        /* 💬 新增: 氣泡循環動畫 (Show 10s, Hide 3s) */
+        /* 💬 氣泡 */
         @keyframes bubbleCycle {
             0% {
                 opacity: 0;
@@ -763,30 +930,25 @@
                 transform: translateX(-50%) scale(1) translateY(0);
             }
 
-            /* 0.5s 淡入 */
             77% {
                 opacity: 1;
                 transform: translateX(-50%) scale(1) translateY(0);
             }
 
-            /* 10s 顯示 */
             81% {
                 opacity: 0;
                 transform: translateX(-50%) scale(0.5) translateY(10px);
             }
 
-            /* 10.5s 淡出 */
             100% {
                 opacity: 0;
                 transform: translateX(-50%) scale(0.5) translateY(10px);
             }
-
-            /* 13s 結束 */
         }
 
         .speech-bubble {
             position: absolute;
-            top: -70px;
+            top: -75px;
             left: 50%;
             transform: translateX(-50%);
             background: #fff;
@@ -799,13 +961,9 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             z-index: 10;
             opacity: 0;
-            /* 預設隱藏，由動畫控制 */
-            /* 使用新的循環動畫 */
             animation: bubbleCycle 13s infinite;
             pointer-events: auto;
-            /* 允許點擊氣泡 */
             cursor: zoom-in;
-            /* 提示可以點擊放大 */
             transition: all 0.3s;
         }
 
@@ -820,15 +978,12 @@
             border-color: inherit transparent transparent transparent;
         }
 
-        /* 🔧 修正：加入 .bubble-persistent (自訂狀態) 到強制顯示清單 */
         .bubble-shout,
         .bubble-introvert,
         .bubble-poke,
         .bubble-persistent {
             opacity: 1 !important;
-            /* 強制顯示 */
             animation: none !important;
-            /* 暫停循環 */
         }
 
         .bubble-shout {
@@ -893,39 +1048,13 @@
                 opacity: 0.3;
             }
         }
-
-        .snow-pile {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100px;
-            background: radial-gradient(circle at 20% 100%, white 30%, transparent 31%), radial-gradient(circle at 50% 100%, white 40%, transparent 41%), radial-gradient(circle at 80% 100%, white 35%, transparent 36%);
-            background-size: 150% 100%;
-            background-repeat: no-repeat;
-            z-index: 0;
-            pointer-events: none;
-            filter: blur(4px);
-            opacity: 0.9;
-        }
-
-        .snow-pile::before {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: -10%;
-            width: 120%;
-            height: 80px;
-            background: radial-gradient(circle at 10% 100%, white 25%, transparent 26%), radial-gradient(circle at 40% 100%, white 35%, transparent 36%), radial-gradient(circle at 70% 100%, white 30%, transparent 31%), radial-gradient(circle at 95% 100%, white 28%, transparent 29%);
-            background-size: 150% 100%;
-            background-repeat: no-repeat;
-            filter: blur(6px);
-            opacity: 0.7;
-        }
     </style>
 </head>
 
 <body>
+    <!-- 🎵 音樂靜音按鈕 -->
+    <button id="musicToggle" class="music-btn" onclick="toggleMusic()">🔊</button>
+
     <!-- 🚪 入場遮罩 -->
     <div id="entry-overlay">
         <div class="entry-content">
@@ -946,7 +1075,6 @@
     </div>
 
     <!-- 🎵 背景音樂 -->
-    <!-- 修正音樂路徑為您指定的連結 -->
     <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3" loop></audio>
 
     <div class="disco-overlay"></div>
@@ -959,13 +1087,12 @@
         <!-- QR Code 卡片 -->
         <div class="qr-card">
             <img id="qr-code-img" src="" alt="Scan Me">
-            <!-- 注意：這裡改成了 onclick 事件，而不是 href 跳轉，這樣音樂才不會斷 -->
             <p>📱 掃描加入廣場 | <a href="#" onclick="switchMode('upload'); return false;"
                     style="color: var(--primary); text-decoration: underline; font-weight: bold;">點我直接加入</a></p>
         </div>
 
         <div class="btn-group">
-            <button id="discoBtn" onclick="manualDisco()">🕺 啟動派對 (Disco!)</button>
+            <button class="action-btn" id="discoBtn" onclick="manualDisco()">🕺 啟動派對 (Disco!)</button>
         </div>
 
         <div id="plaza" class="plaza-grid">
@@ -973,18 +1100,23 @@
         </div>
     </div>
 
-    <!-- 📱 手機上傳區 (掃碼後顯示) -->
+    <!-- 📱 手機上傳區 (核心操作區) -->
     <div id="upload-view" class="view-section">
         <div class="mobile-card">
-            <h2>🎅 加入聖誕派對</h2>
-            <p>上傳一張大頭照，你就會出現在大螢幕上喔！</p>
+            <h2>🎅 尋找聖誕老人！是你嗎？</h2>
+
+            <div style="margin: 15px 0; color: #555; text-align: left; padding: 0 10px;">
+                <p style="font-weight: bold; margin-bottom: 8px; font-size: 1.1rem; color: #333; text-align: center;">
+                    簡單兩步驟，讓大家在大螢幕上看見你！</p>
+                <p style="margin: 6px 0;">📸 <strong>拍張照</strong> (或選張美照)</p>
+                <p style="margin: 6px 0;">✨ <strong>按下發送</strong>，抽取神秘裝備！</p>
+            </div>
 
             <input type="text" id="nameInput" placeholder="輸入你的暱稱 (例如: Andy)" autocomplete="off">
-            <!-- 新增：狀態輸入欄位 -->
             <input type="text" id="statusInput" maxlength="20" placeholder="輸入你的狀態 (限20字) 可留空" autocomplete="off">
 
             <input type="file" id="fileInput" accept="image/*" style="display: none;">
-            <label for="fileInput" class="file-upload-btn">📷 選擇或拍攝照片</label>
+            <label for="fileInput" class="file-upload-btn">📂 點我選照片 (越清楚越好笑！)</label>
 
             <div id="preview-container" class="santa-wrapper"
                 style="display:inline-block; transform: scale(1.2); margin: 20px;">
@@ -992,8 +1124,8 @@
                 <img id="preview-img" class="santa-img" src="">
             </div>
 
-            <button id="uploadBtn" onclick="compressAndUpload()">🚀 發送上大螢幕</button>
-            <!-- 這裡也改成使用 JS 切換回廣場 -->
+            <button id="uploadBtn" onclick="compressAndUpload()">🚀 發射！送我上大螢幕</button>
+
             <button onclick="switchMode('plaza')"
                 style="width: 90%; padding: 12px; margin-top: 10px; background: #6c757d; color: white; border: none; border-radius: 50px; font-size: 1rem; cursor: pointer;">🏠
                 返回廣場</button>
@@ -1011,68 +1143,77 @@
         };
 
         if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-            try {
-                firebase.initializeApp(firebaseConfig);
-            } catch (e) {
-                console.error("Firebase init error", e);
-            }
+            try { firebase.initializeApp(firebaseConfig); } catch (e) { console.error("Firebase init error", e); }
         }
 
         let db;
-        if (typeof firebase !== 'undefined') {
-            db = firebase.firestore();
+        if (typeof firebase !== 'undefined') { db = firebase.firestore(); }
+
+        // === 🎰 扭蛋機率設定 ===
+        const GACHA_POOL = [
+            { id: 'none', name: '普通聖誕老人', prob: 0.50, icon: '🎅' }, // 50%
+            { id: 'antlers', name: '迷途小麋鹿', prob: 0.30, icon: '🦌' }, // 30%
+            { id: 'elf', name: '派對小精靈', prob: 0.15, icon: '🧝' }, // 15%
+            { id: 'halo', name: '聖誕小天使', prob: 0.04, icon: '👼' }, // 4%
+            { id: 'gold', name: '黃金傳說', prob: 0.01, icon: '👑' }  // 1%
+        ];
+
+        function pullGacha() {
+            const rand = Math.random();
+            let cumulative = 0;
+            for (const item of GACHA_POOL) {
+                cumulative += item.prob;
+                if (rand < cumulative) { return item; }
+            }
+            return GACHA_POOL[0];
         }
 
-        // 💡 燈箱控制邏輯
+        // 💡 燈箱與音樂控制
         function openLightbox(text, author) {
             const lightbox = document.getElementById('status-lightbox');
-            const lightboxText = document.getElementById('lightbox-text');
-            const lightboxAuthor = document.getElementById('lightbox-author');
-
-            lightboxText.innerText = text;
-            lightboxAuthor.innerText = `- ${author} 說`;
-
+            document.getElementById('lightbox-text').innerText = text;
+            document.getElementById('lightbox-author').innerText = `- ${author} 說`;
             lightbox.style.display = "flex";
-            // 延遲一點點讓 CSS transition 生效
-            setTimeout(() => {
-                lightbox.classList.add('show');
-            }, 10);
+            setTimeout(() => { lightbox.classList.add('show'); }, 10);
         }
 
         function closeLightbox(event) {
-            // 如果有點擊事件且目標不是 lightbox 本身 (例如點擊內容區域)，則不關閉
-            // 這裡已經在 HTML 的 content 區域加了 stopPropagation，所以這裡可以直接關
             const lightbox = document.getElementById('status-lightbox');
             lightbox.classList.remove('show');
-            setTimeout(() => {
-                lightbox.style.display = "none";
-            }, 300);
+            setTimeout(() => { lightbox.style.display = "none"; }, 300);
         }
 
-        // 🎵 音樂與遮罩邏輯
         function enterParty() {
             const overlay = document.getElementById('entry-overlay');
             const bgm = document.getElementById('bgm');
-
-            // 修正：設置播放速度為 1.0 (預設)
             if (bgm) {
                 bgm.playbackRate = 1.0;
                 bgm.volume = 0.5;
-                bgm.play().then(() => {
-                    console.log("Music started with speed 1.0!");
-                }).catch(error => {
-                    console.log("Auto-play blocked or failed:", error);
-                });
+                // 嘗試播放，處理瀏覽器阻擋
+                const playPromise = bgm.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => { console.log("Music started"); })
+                        .catch(error => { console.log("Auto-play blocked", error); });
+                }
             }
-
-            // 淡出並移除遮罩
             overlay.style.opacity = '0';
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 800);
+            setTimeout(() => { overlay.style.display = 'none'; }, 800);
         }
 
-        // 🔄 畫面切換邏輯 (SPA 模式，不重新整理)
+        // 🎵 音樂切換控制
+        function toggleMusic() {
+            const bgm = document.getElementById('bgm');
+            const btn = document.getElementById('musicToggle');
+            if (bgm.muted) {
+                bgm.muted = false;
+                btn.innerText = "🔊";
+            } else {
+                bgm.muted = true;
+                btn.innerText = "🔇";
+            }
+        }
+
+        // 🔄 畫面切換邏輯
         function switchMode(target) {
             const plazaView = document.getElementById('plaza-view');
             const uploadView = document.getElementById('upload-view');
@@ -1080,23 +1221,16 @@
             if (target === 'upload') {
                 plazaView.classList.remove('active');
                 uploadView.classList.add('active');
-                try {
-                    history.pushState({ mode: 'upload' }, '', '?mode=upload');
-                } catch (e) { }
+                try { history.pushState({ mode: 'upload' }, '', '?mode=upload'); } catch (e) { }
             } else {
                 uploadView.classList.remove('active');
                 plazaView.classList.add('active');
-                try {
-                    history.pushState({ mode: 'plaza' }, '', window.location.pathname);
-                } catch (e) { }
+                try { history.pushState({ mode: 'plaza' }, '', window.location.pathname); } catch (e) { }
             }
         }
 
-        // 🔄 初始載入路由控制
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
-
-        // 設定 QR Code (總是使用帶有 mode=upload 的網址)
         const uploadUrl = window.location.href.split('?')[0] + '?mode=upload';
         document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uploadUrl)}`;
 
@@ -1117,7 +1251,6 @@
             "其實我是外星人 👽", "地球好危險 🌍", "我要冬眠了 🐻", "有人看到我的腦袋嗎？ 🧠",
             "我愛工作 (才怪) 🤥", "今天便當吃什麼？ 🍱"
         ];
-        const pokeMessages = ["哎呦! 😵", "別戳我! 😠", "暈了暈了 💫", "我要加薪! 💰", "幹嘛啦? 😒", "好癢喔! 😂", "Merry Xmas! 🎄", "給糖吃! 🍬", "我是老闆! 👔"];
         const danceClasses = ['dance-1', 'dance-2', 'dance-3'];
 
         const fileInput = document.getElementById('fileInput');
@@ -1129,7 +1262,6 @@
         const previewContainer = document.getElementById('preview-container');
         let selectedFile = null;
 
-        // 預覽圖片
         if (fileInput) {
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
@@ -1146,36 +1278,44 @@
             });
         }
 
-        // 上傳功能
+        // 上傳與扭蛋
         async function compressAndUpload() {
             const name = nameInput.value.trim();
-            const customStatus = statusInput.value.trim(); // 取得自訂狀態
+            const customStatus = statusInput.value.trim();
 
             if (!name || !selectedFile) { statusMsg.innerText = "❌ 請輸入名字並選擇照片！"; return; }
 
             uploadBtn.disabled = true;
-            uploadBtn.innerText = "處理中...";
+            uploadBtn.innerText = "🎲 正在抽取聖誕裝備...";
             statusMsg.style.color = "#666";
-            statusMsg.innerText = "正在壓縮並傳送...";
+            statusMsg.innerText = "壓縮中...";
 
             try {
                 const compressedBase64 = await compressImage(selectedFile);
-
-                if (compressedBase64.length > 800000) {
-                    throw new Error("照片壓縮後仍然太大，請換一張試試！");
-                }
-
+                if (compressedBase64.length > 800000) throw new Error("照片太大囉，換一張試試！");
                 if (!db) throw new Error("Database not initialized");
+
+                // 🎰 扭蛋抽獎
+                const gachaResult = pullGacha();
+                console.log("Gacha Result:", gachaResult);
 
                 await db.collection('santas').add({
                     name: name,
                     photoBase64: compressedBase64,
-                    customStatus: customStatus, // 存入自訂狀態
+                    customStatus: customStatus,
+                    accessoryId: gachaResult.id,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     clickCount: 0
                 });
+
                 statusMsg.style.color = "#2ecc71";
-                statusMsg.innerText = "✅ 發送成功！請看大螢幕！";
+                let successText = `✅ 發送成功！`;
+                if (gachaResult.id !== 'none') {
+                    successText += `<br><span style="font-size:1.1rem; font-weight:bold; color:#d42426;">恭喜獲得【${gachaResult.icon} ${gachaResult.name}】！</span>`;
+                } else {
+                    successText += `<br>變身成功！快看大螢幕！`;
+                }
+                statusMsg.innerHTML = successText;
 
                 setTimeout(() => {
                     nameInput.value = '';
@@ -1184,18 +1324,16 @@
                     previewContainer.style.display = 'none';
                     selectedFile = null;
                     uploadBtn.disabled = false;
-                    uploadBtn.innerText = "🚀 發送上大螢幕";
+                    uploadBtn.innerText = "🚀 再抽一次 (發送)";
                     statusMsg.innerText = "";
-                    // 上傳成功後自動切回廣場 (可選)
-                    // switchMode('plaza');
-                }, 3000);
+                }, 5000);
 
             } catch (error) {
                 console.error(error);
                 statusMsg.style.color = "#ff6b6b";
                 statusMsg.innerText = "錯誤: " + error.message;
                 uploadBtn.disabled = false;
-                uploadBtn.innerText = "🚀 發送上大螢幕";
+                uploadBtn.innerText = "🚀 發射！送我上大螢幕";
             }
         }
 
@@ -1214,17 +1352,16 @@
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                        resolve(dataUrl);
-                    }; img.onerror = (error) => reject(error);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    }; img.onerror = reject;
                 };
             });
         }
 
-        // 大螢幕邏輯 (只在廣場模式或背景執行)
+        // 大螢幕邏輯
         const plaza = document.getElementById('plaza');
         let currentSnapshotDocs = [];
-        let displayedDocs = []; // 🚀 新增：記錄當前畫面上的排序
+        let displayedDocs = [];
 
         if (db) {
             try {
@@ -1241,288 +1378,237 @@
 
                     currentSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                    // 只有在人數變動時才判斷是否渲染
                     if (currentSnapshotDocs.length <= 40) {
-                        // 1. 計算新的理想順序 (依讚數排序)
                         const sortedDocs = [...currentSnapshotDocs].sort((a, b) => {
                             const timeA = a.createdAt ? a.createdAt.seconds : 0;
                             const timeB = b.createdAt ? b.createdAt.seconds : 0;
                             return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
                         });
 
-                        // 2. 檢查順序是否改變
                         const currentOrder = displayedDocs.map(d => d.id).join(',');
                         const newOrder = sortedDocs.map(d => d.id).join(',');
 
-                        // 3. 如果順序改變或初次渲染，則重繪廣場
                         if (currentOrder !== newOrder || displayedDocs.length === 0) {
                             displayedDocs = sortedDocs;
                             renderPlaza(displayedDocs);
                         } else {
-                            // 4. 順序沒變，僅更新數據與文字 (效能優化)
-                            displayedDocs = sortedDocs; // 更新內存數據
-                            
+                            displayedDocs = sortedDocs;
+                            // 僅更新點擊數，避免 DOM 重繪造成閃爍
                             snapshot.docChanges().forEach(change => {
                                 if (change.type === 'modified') {
                                     const data = change.doc.data();
-                                    const card = document.getElementById(`santa-${data.id}`);
+                                    const card = document.getElementById(`santa-${change.doc.id}`);
                                     if (card) {
-                                        // 更新讚數
                                         const badge = card.querySelector('.click-badge');
                                         if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
-                                        // 更新名字
-                                        const nameEl = card.querySelector('.santa-name');
-                                        if (nameEl) nameEl.innerText = escapeHtml(data.name);
+
+                                        // 檢查是否因為點擊數改變導致冠軍易主，若是則需要重新渲染以更新帽子樣式
+                                        const currentWinner = displayedDocs[0];
+                                        if (currentWinner && currentWinner.id === change.doc.id) {
+                                            // 簡單起見，如果是前幾名變動，我們觸發一次重繪
+                                            renderPlaza(displayedDocs);
+                                        }
                                     }
                                 }
                             });
                         }
                     } else {
-                        // 超過40人，首次載入或結構改變時渲染，之後交給 setInterval
+                        // 人數過多時不即時排序
                         if (plaza.children.length === 0 || plaza.children.length !== currentSnapshotDocs.length) {
                             displayedDocs = currentSnapshotDocs;
                             renderPlaza(displayedDocs);
                         }
                     }
-                }, error => {
-                    console.log("Snapshot error (ignore if offline)", error);
-                });
-            } catch (e) {
-                console.error("Firestore error", e);
-            }
+                }, error => console.log("Snapshot error", error));
+            } catch (e) { console.error("Firestore error", e); }
         }
 
-        // ⏰ 30秒大風吹 (人數 > 40 才啟動)
+        // 30秒大風吹 (如果人數很多)
         setInterval(() => {
             if (currentSnapshotDocs.length > 40) {
-                // 洗牌並重新渲染
                 let shuffled = [...currentSnapshotDocs];
                 for (let i = shuffled.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
                 }
-                displayedDocs = shuffled; // 更新當前顯示順序
+                displayedDocs = shuffled;
                 renderPlaza(displayedDocs);
             }
         }, 30000);
 
         function renderPlaza(docs) {
-            // 安全防護：如果 docs 沒有傳入，使用目前的快照
-            docs = docs || displayedDocs; // 使用 displayedDocs 作為備援
+            docs = docs || displayedDocs;
             if (!docs || docs.length === 0) return;
 
             const plaza = document.getElementById('plaza');
             if (!plaza) return;
 
-            // 移除 p 標籤 (Loading / QR tips)
-            const p = plaza.querySelector('p');
-            if (p && (p.innerText.includes("連線") || p.innerText.includes("掃描"))) p.remove();
-
-            // 👑 找出第一名 (從所有資料中找，確保大風吹時第一名還是有皇冠)
+            // 找出第一名 (按讚數最高)
             let winnerId = null;
             if (currentSnapshotDocs && currentSnapshotDocs.length > 0) {
-                const winner = currentSnapshotDocs.reduce((prev, current) => {
-                    return (prev.clickCount || 0) > (current.clickCount || 0) ? prev : current;
-                }, currentSnapshotDocs[0]);
-                winnerId = winner ? winner.id : null;
+                const winner = currentSnapshotDocs.reduce((prev, current) =>
+                    (prev.clickCount || 0) > (current.clickCount || 0) ? prev : current
+                    , currentSnapshotDocs[0]);
+                // 只有當按讚數大於0時才算有冠軍，避免剛開始大家都是0的時候就有皇冠
+                if ((winner.clickCount || 0) > 0) {
+                    winnerId = winner.id;
+                }
             }
 
-            // 1. 準備語錄
             let shuffledMessages = [...randomMessages];
             for (let i = shuffledMessages.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffledMessages[i], shuffledMessages[j]] = [shuffledMessages[j], shuffledMessages[i]];
             }
 
-            // 2. 標記現有的卡片 ID
             const existingIds = new Set();
 
             docs.forEach((data, index) => {
                 existingIds.add(data.id);
                 let card = document.getElementById(`santa-${data.id}`);
                 const clickCount = data.clickCount || 0;
-                const isWinner = (data.id === winnerId); // 判斷是否為第一名
+                const isWinner = (data.id === winnerId);
+                const accessoryId = data.accessoryId || 'none';
 
-                // 決定語錄
                 const isCustom = (data.customStatus && data.customStatus.trim() !== "");
                 const fullMsg = isCustom ? data.customStatus : shuffledMessages[index % shuffledMessages.length];
                 const persistentClass = isCustom ? "bubble-persistent" : "";
-
-                // 🔧 縮短顯示文字 (超過8字元則截斷) - 修正 Emoji 亂碼問題
                 let displayMsg = fullMsg;
-                // 使用 Array.from 正確處理 Emoji (避免把一個 Emoji 切成兩半)
                 const msgChars = Array.from(fullMsg);
-                if (msgChars.length > 8) {
-                    displayMsg = msgChars.slice(0, 8).join("") + "...";
-                }
+                if (msgChars.length > 8) displayMsg = msgChars.slice(0, 8).join("") + "...";
 
-                if (card) {
-                    // --- 更新現有卡片 (DOM Diffing) ---
-                    plaza.appendChild(card); // Update Position
+                const generateCardHTML = () => {
+                    let accessoryHTML = '';
+                    if (accessoryId === 'antlers') accessoryHTML = `<div class="accessory antlers"><div class="branch left"></div><div class="branch right"></div></div>`;
+                    else if (accessoryId === 'halo') accessoryHTML = `<div class="accessory halo"></div>`;
+                    else if (accessoryId === 'elf') accessoryHTML = `<div class="accessory elf"></div>`;
+                    else if (accessoryId === 'gold') accessoryHTML = `<div class="accessory crown">👑</div>`;
 
-                    // Update Data
-                    const badge = card.querySelector('.click-badge');
-                    if (badge) badge.innerText = `👍 ${clickCount}`;
+                    // 帽子邏輯：如果不是第一名且有飾品，帽子在CSS中會被隱藏
+                    // 如果是第一名，會加上 special class 變成黃金大帽
+                    const defaultHatHTML = `<div class="css-hat ${isWinner ? 'special' : ''}"></div>`;
 
-                    const nameEl = card.querySelector('.santa-name');
-                    if (nameEl) nameEl.innerText = escapeHtml(data.name);
-
-                    // Update Hat
-                    const hat = card.querySelector('.css-hat');
-                    if (hat) {
-                        if (isWinner) hat.classList.add('special');
-                        else hat.classList.remove('special');
-                    }
-
-                    // Update Bubble
-                    const bubble = card.querySelector('.speech-bubble');
-                    if (bubble) {
-                        // 🔧 重新綁定點擊事件以傳遞完整文字
-                        bubble.onclick = (e) => {
-                            e.stopPropagation(); // 阻止卡片旋轉
-                            openLightbox(fullMsg, data.name);
-                        };
-
-                        const isBusy = bubble.classList.contains('bubble-poke') ||
-                            bubble.classList.contains('bubble-shout') ||
-                            bubble.classList.contains('bubble-introvert');
-
-                        // 只有在沒忙碌時才更新文字
-                        if (!isBusy) {
-                            // 只有文字真的變了才改，避免閃爍
-                            if (bubble.innerText !== displayMsg) {
-                                bubble.innerText = escapeHtml(displayMsg);
-                            }
-                            // 更新自訂狀態樣式
-                            if (isCustom) bubble.classList.add('bubble-persistent');
-                            else bubble.classList.remove('bubble-persistent');
-                        }
-                    }
-
-                } else {
-                    // --- 創建新卡片 ---
-                    card = document.createElement('div');
-                    card.className = 'santa-card';
-                    card.id = `santa-${data.id}`;
-                    card.dataset.id = data.id;
-
-                    const randomDance = danceClasses[Math.floor(Math.random() * danceClasses.length)];
-                    const randomDelay = Math.random() * 2;
-                    const bubbleDelay = Math.random() * 13;
-
-                    card.innerHTML = `
-                        <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
-                            <div class="speech-bubble ${persistentClass}" style="animation-delay: -${bubbleDelay}s;">${escapeHtml(displayMsg)}</div>
-                            <div class="css-hat ${isWinner ? 'special' : ''}"></div>
+                    return `
+                        <div class="santa-wrapper ${danceClasses[Math.floor(Math.random() * danceClasses.length)]}" 
+                             style="animation-delay: -${Math.random() * 2}s;">
+                            <div class="speech-bubble ${persistentClass}" style="animation-delay: -${Math.random() * 13}s;">${escapeHtml(displayMsg)}</div>
+                            ${defaultHatHTML}
+                            ${accessoryHTML}
                             <img src="${data.photoBase64}" class="santa-img">
                         </div>
                         <div class="santa-name">${escapeHtml(data.name)}</div>
                         <div class="click-badge">👍 ${clickCount}</div>
                     `;
+                };
 
-                    // 綁定卡片點擊 (戳戳樂)
+                if (card) {
+                    // 更新現有卡片
+                    plaza.appendChild(card); // 移動到 DOM 的末尾以符合排序（如果需要）
+                    const hasAccessoryClass = (accessoryId !== 'none') ? 'has-accessory' : '';
+                    const goldClass = (accessoryId === 'gold') ? 'gold-mode' : '';
+                    card.classList.remove('gold-mode', 'has-accessory');
+                    if (goldClass) card.classList.add(goldClass);
+                    if (hasAccessoryClass) card.classList.add(hasAccessoryClass);
+
+                    const currentAccessory = card.dataset.acc || 'none';
+                    const currentWinnerState = card.dataset.winner || 'false';
+
+                    // 只有當飾品改變 或 冠軍狀態改變時，才重繪 HTML
+                    if (currentAccessory !== accessoryId || currentWinnerState !== isWinner.toString()) {
+                        card.innerHTML = generateCardHTML();
+                        card.dataset.acc = accessoryId;
+                        card.dataset.winner = isWinner;
+                        const bubbleEl = card.querySelector('.speech-bubble');
+                        if (bubbleEl) bubbleEl.onclick = (e) => { e.stopPropagation(); openLightbox(fullMsg, data.name); };
+                    } else {
+                        // 僅更新文字和數字
+                        const badge = card.querySelector('.click-badge');
+                        if (badge) badge.innerText = `👍 ${clickCount}`;
+                        const nameEl = card.querySelector('.santa-name');
+                        if (nameEl) nameEl.innerText = escapeHtml(data.name);
+
+                        const bubble = card.querySelector('.speech-bubble');
+                        if (bubble && !bubble.classList.contains('bubble-poke') && bubble.innerText !== displayMsg) {
+                            bubble.innerText = escapeHtml(displayMsg);
+                        }
+                    }
+                } else {
+                    // 建立新卡片
+                    card = document.createElement('div');
+                    card.className = `santa-card ${accessoryId === 'gold' ? 'gold-mode' : ''} ${accessoryId !== 'none' ? 'has-accessory' : ''}`;
+                    card.id = `santa-${data.id}`;
+                    card.dataset.id = data.id;
+                    card.dataset.acc = accessoryId;
+                    card.dataset.winner = isWinner;
+                    card.innerHTML = generateCardHTML();
                     card.onclick = function () { handlePoke(this); };
-
-                    // 綁定氣泡點擊 (開燈箱 - 傳遞 fullMsg)
                     const bubbleEl = card.querySelector('.speech-bubble');
-                    bubbleEl.onclick = (e) => {
-                        e.stopPropagation(); // 阻止卡片旋轉
-                        openLightbox(fullMsg, data.name);
-                    };
-
+                    bubbleEl.onclick = (e) => { e.stopPropagation(); openLightbox(fullMsg, data.name); };
                     plaza.appendChild(card);
                 }
             });
 
-            // 3. 清理已刪除的卡片
+            // 清理已刪除的卡片
             Array.from(plaza.children).forEach(child => {
-                if (child.classList.contains('santa-card') && !existingIds.has(child.dataset.id)) {
-                    child.remove();
-                }
+                if (child.classList.contains('santa-card') && !existingIds.has(child.dataset.id)) { child.remove(); }
             });
         }
 
         function handlePoke(card) {
-            // 修正：現在只在本地更新讚數，不觸發 renderPlaza
             if (card.classList.contains('busy')) return;
-            card.classList.add('busy'); // 鎖定卡片
-
+            card.classList.add('busy');
             const docId = card.dataset.id;
             const badge = card.querySelector('.click-badge');
-
-            // 1. 本地更新讚數 (快速響應)
             let current = parseInt(badge.innerText.split(' ')[1]);
             badge.innerText = `👍 ${current + 1}`;
 
-            // 2. 異步上傳到 Firebase
             if (docId && db) {
-                db.collection('santas').doc(docId).update({
-                    clickCount: firebase.firestore.FieldValue.increment(1)
-                }).catch(err => console.error("Firebase update failed:", err));
+                db.collection('santas').doc(docId).update({ clickCount: firebase.firestore.FieldValue.increment(1) })
+                    .catch(err => console.error("Firebase update failed:", err));
             }
 
             const pokeMsg = "點屁呀～～";
             const bubble = card.querySelector('.speech-bubble');
             const originalText = bubble.innerText;
-
             bubble.innerText = pokeMsg;
             bubble.classList.add('bubble-poke');
-
             const wrapper = card.querySelector('.santa-wrapper');
             wrapper.style.transform = "scale(1.1)";
 
-            // 延遲 1000ms 後才移除特效
             setTimeout(() => {
-                // 恢復動畫和氣泡
                 wrapper.style.transform = "";
                 bubble.innerText = originalText;
                 bubble.classList.remove('bubble-poke');
-                card.classList.remove('busy'); // 解鎖卡片
+                card.classList.remove('busy');
             }, 1000);
         }
 
-        // 啟動環境特效
+        // 環境特效
         createSnow();
         startRandomRunAway();
         startRandomIntrovertEvent();
-        // 啟動 Disco 模式 (隨機或手動觸發)
         startDiscoMode();
 
-        // --- Helper Functions ---
         function manualDisco() {
             if (document.body.classList.contains('disco-mode')) return;
             triggerDiscoEffect();
         }
         function triggerDiscoEffect() {
             document.body.classList.add('disco-mode');
-            // 播放音樂 (使用 bgm 元素)
             const bgm = document.getElementById('bgm');
             if (bgm) {
-                // 修正：Disco 模式設定播放速度為 1.25
                 bgm.playbackRate = 1.25;
-                // 如果音樂未播放，嘗試播放
-                if (bgm.paused) {
-                    bgm.currentTime = 0;
-                    bgm.play().catch(e => console.log("播放失敗 (請先與網頁互動)", e));
-                }
+                if (bgm.paused) { bgm.currentTime = 0; bgm.play().catch(e => console.log("Play failed", e)); }
             }
-
             setTimeout(() => {
                 document.body.classList.remove('disco-mode');
-                // 修正：Disco 結束後恢復正常速度 1.0
-                if (bgm) {
-                    bgm.playbackRate = 1.0;
-                }
-                // 可選擇停止音樂，或讓它繼續當背景音
-                // bgm.pause();
+                if (bgm) bgm.playbackRate = 1.0;
             }, 5000);
         }
         function escapeHtml(text) {
             if (!text) return "Santa";
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
-
-        // 隨機事件邏輯 (保持原樣)
         function createSnow() {
             const snowContainer = document.querySelector('.snow-container');
             for (let i = 0; i < 50; i++) {
@@ -1536,7 +1622,6 @@
             }
         }
         function startRandomRunAway() {
-            const nextRun = Math.random() * 20000 + 15000;
             setTimeout(() => {
                 const cards = document.querySelectorAll('.santa-card:not(.busy)');
                 if (cards.length > 0) {
@@ -1553,10 +1638,9 @@
                     }, 6000);
                 }
                 startRandomRunAway();
-            }, nextRun);
+            }, Math.random() * 20000 + 15000);
         }
         function startRandomIntrovertEvent() {
-            const nextRun = Math.random() * 20000 + 10000;
             setTimeout(() => {
                 const cards = document.querySelectorAll('.santa-card:not(.busy)');
                 if (cards.length > 0) {
@@ -1569,9 +1653,7 @@
                         card.classList.remove('mode-introvert-shake'); bubble.innerText = "我是i人 😭";
                         bubble.classList.add('bubble-introvert'); card.classList.add('mode-introvert-hide');
                         const rect = card.getBoundingClientRect();
-                        const targetX = 20; const targetY = 100;
-                        const transX = targetX - rect.left; const transY = targetY - rect.top;
-                        card.style.transform = `translate(${transX}px, ${transY}px)`;
+                        card.style.transform = `translate(${20 - rect.left}px, ${100 - rect.top}px)`;
                     }, 1500);
                     setTimeout(() => {
                         card.style.transform = '';
@@ -1582,14 +1664,12 @@
                     }, 6500);
                 }
                 startRandomIntrovertEvent();
-            }, nextRun);
+            }, Math.random() * 20000 + 10000);
         }
         function startDiscoMode() {
-            const nextRun = Math.random() * 40000 + 30000;
-            setTimeout(() => { triggerDiscoEffect(); startDiscoMode(); }, nextRun);
+            setTimeout(() => { triggerDiscoEffect(); startDiscoMode(); }, Math.random() * 40000 + 30000);
         }
 
-        // 🔧 修正 1: 監聽視窗大小改變，自動調整顯示數量 (使用 displayedDocs)
         let lastWindowWidth = window.innerWidth;
         window.addEventListener('resize', () => {
             if (window.innerWidth !== lastWindowWidth) {
