@@ -1243,19 +1243,25 @@
 
                     // 只有在人數變動時才判斷是否渲染
                     if (currentSnapshotDocs.length <= 40) {
-                        // 1. 計算新的理想順序
+                        // 1. 計算新的理想順序 (依讚數排序)
                         const sortedDocs = [...currentSnapshotDocs].sort((a, b) => {
                             const timeA = a.createdAt ? a.createdAt.seconds : 0;
                             const timeB = b.createdAt ? b.createdAt.seconds : 0;
                             return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
                         });
 
-                        // 2. 更新 displayedDocs，但如果是第一次渲染，直接使用 sortedDocs
-                        if (displayedDocs.length === 0) {
+                        // 2. 檢查順序是否改變
+                        const currentOrder = displayedDocs.map(d => d.id).join(',');
+                        const newOrder = sortedDocs.map(d => d.id).join(',');
+
+                        // 3. 如果順序改變或初次渲染，則重繪廣場
+                        if (currentOrder !== newOrder || displayedDocs.length === 0) {
                             displayedDocs = sortedDocs;
                             renderPlaza(displayedDocs);
                         } else {
-                            // 3. DOM Diffing & Text Update (不重繪)
+                            // 4. 順序沒變，僅更新數據與文字 (效能優化)
+                            displayedDocs = sortedDocs; // 更新內存數據
+                            
                             snapshot.docChanges().forEach(change => {
                                 if (change.type === 'modified') {
                                     const data = change.doc.data();
@@ -1268,10 +1274,6 @@
                                         const nameEl = card.querySelector('.santa-name');
                                         if (nameEl) nameEl.innerText = escapeHtml(data.name);
                                     }
-                                } else if (change.type === 'added' || change.type === 'removed') {
-                                    // 只有新增或刪除時才重新排序整個畫面
-                                    displayedDocs = sortedDocs;
-                                    renderPlaza(displayedDocs);
                                 }
                             });
                         }
