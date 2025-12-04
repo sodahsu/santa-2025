@@ -514,6 +514,60 @@
             border-radius: 10px;
         }
 
+        /* 👑 第一名：三層大高帽樣式 */
+        .css-hat.special {
+            width: 70px;
+            height: 60px;
+            border-radius: 5px;
+            background: 
+                linear-gradient(to bottom, #FFD700, #FDB931) top center / 50% 30% no-repeat,
+                linear-gradient(to bottom, #d42426, #ff3336) center center / 75% 35% no-repeat,
+                linear-gradient(to bottom, #FFD700, #FDB931) bottom center / 100% 35% no-repeat;
+            top: -45px;
+            transform: translateX(-50%) rotate(-5deg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 文字：第一名 */
+        .css-hat.special::before {
+            content: '第一名';
+            position: absolute;
+            top: 50%;
+            bottom: auto;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: auto;
+            background: transparent;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            z-index: 6;
+            border-radius: 0;
+        }
+
+        /* 頂部裝飾球 */
+        .css-hat.special::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #fff;
+            z-index: 6;
+        }
+
         @keyframes dance-sway {
 
             0%,
@@ -1262,6 +1316,15 @@
             const p = plaza.querySelector('p');
             if (p && (p.innerText.includes("連線") || p.innerText.includes("掃描"))) p.remove();
 
+            // 👑 找出第一名 (從所有資料中找，確保大風吹時第一名還是有皇冠)
+            let winnerId = null;
+            if (currentSnapshotDocs && currentSnapshotDocs.length > 0) {
+                const winner = currentSnapshotDocs.reduce((prev, current) => {
+                    return (prev.clickCount || 0) > (current.clickCount || 0) ? prev : current;
+                }, currentSnapshotDocs[0]);
+                winnerId = winner ? winner.id : null;
+            }
+
             // 1. 準備語錄
             let shuffledMessages = [...randomMessages];
             for (let i = shuffledMessages.length - 1; i > 0; i--) {
@@ -1276,6 +1339,7 @@
                 existingIds.add(data.id);
                 let card = document.getElementById(`santa-${data.id}`);
                 const clickCount = data.clickCount || 0;
+                const isWinner = (data.id === winnerId); // 判斷是否為第一名
 
                 // 決定語錄
                 const isCustom = (data.customStatus && data.customStatus.trim() !== "");
@@ -1300,6 +1364,13 @@
 
                     const nameEl = card.querySelector('.santa-name');
                     if (nameEl) nameEl.innerText = escapeHtml(data.name);
+
+                    // Update Hat
+                    const hat = card.querySelector('.css-hat');
+                    if (hat) {
+                        if (isWinner) hat.classList.add('special');
+                        else hat.classList.remove('special');
+                    }
 
                     // Update Bubble
                     const bubble = card.querySelector('.speech-bubble');
@@ -1340,7 +1411,7 @@
                     card.innerHTML = `
                         <div class="santa-wrapper ${randomDance}" style="animation-delay: -${randomDelay}s;">
                             <div class="speech-bubble ${persistentClass}" style="animation-delay: -${bubbleDelay}s;">${escapeHtml(displayMsg)}</div>
-                            <div class="css-hat"></div>
+                            <div class="css-hat ${isWinner ? 'special' : ''}"></div>
                             <img src="${data.photoBase64}" class="santa-img">
                         </div>
                         <div class="santa-name">${escapeHtml(data.name)}</div>
