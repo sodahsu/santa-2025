@@ -1337,6 +1337,7 @@
             }
         }
 
+        // ✅ 優化版：強力壓縮圖片 (替換原本的 compressImage)
         function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1346,14 +1347,17 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const maxWidth = 250;
+                        // ⚡ 將寬度限制在 100px (在大螢幕上顯示 100px 已經很清楚了)
+                        const maxWidth = 100;
                         const scaleSize = maxWidth / img.width;
                         canvas.width = maxWidth;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.6));
-                    }; img.onerror = reject;
+                        // ⚡ 使用 JPEG 格式並將品質降至 0.5
+                        resolve(canvas.toDataURL('image/jpeg', 0.5));
+                    };
+                    img.onerror = reject;
                 };
             });
         }
@@ -1363,195 +1367,170 @@
         let currentSnapshotDocs = [];
         let displayedDocs = [];
 
+
+        // === 🚀 高效能渲染邏輯 (替換原有的 Firestore 監聽與 renderPlaza) ===
+        // 本地資料快取，比陣列搜尋更快
+        let localDataMap = new Map();
+        let isSorting = false;
+
         if (db) {
             try {
+                // 監聽數據變更
                 db.collection('santas').onSnapshot((snapshot) => {
                     if (snapshot.empty) {
-                        if (plaza.innerHTML.includes("連線")) plaza.innerHTML = '<p style="color:#eee">掃描上方 QR Code 加入我們！</p>';
+                        const p = document.querySelector('#plaza p');
+                        if (p) p.innerHTML = '掃描上方 QR Code 加入我們！';
                         return;
                     }
 
-                    if (plaza.querySelector('p')) {
-                        const p = plaza.querySelector('p');
-                        if (p.innerText.includes("連線") || p.innerText.includes("掃描")) p.remove();
+                    // 移除"連線中"文字
+                    const loadingText = document.querySelector('#plaza > p');
+                    if (loadingText) loadingText.remove();
+
+                    let needsSort = false;
+
+                    snapshot.docChanges().forEach(change => {
+                        const data = change.doc.data();
+                        const id = change.doc.id;
+
+                        if (change.type === 'added') {
+                            localDataMap.set(id, { id, ...data });
+                            createOrUpdateCard({ id, ...data }); // 新人直接加入
+                            needsSort = true; // 有新人加入才標記需要排序
+                        }
+                        else if (change.type === 'modified') {
+                            // 更新快取
+                            localDataMap.set(id, { id, ...data });
+                            // ⚡ 只更新文字與數字，不移動 DOM 位置 (效能關鍵)
+                            updateCardContentOnly({ id, ...data });
+                        }
+                        else if (change.type === 'removed') {
+                            localDataMap.delete(id);
+                            const card = document.getElementById(`santa-${id}`);
+                            if (card) card.remove();
+                        }
+                    });
+
+                    // 初次載入或有新人時，稍微延遲後排序
+                    if (needsSort) {
+                        setTimeout(sortDomElements, 500);
                     }
 
-                    currentSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                    if (currentSnapshotDocs.length <= 40) {
-                        const sortedDocs = [...currentSnapshotDocs].sort((a, b) => {
-                            const timeA = a.createdAt ? a.createdAt.seconds : 0;
-                            const timeB = b.createdAt ? b.createdAt.seconds : 0;
-                            return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
-                        });
-
-                        const currentOrder = displayedDocs.map(d => d.id).join(',');
-                        const newOrder = sortedDocs.map(d => d.id).join(',');
-
-                        if (currentOrder !== newOrder || displayedDocs.length === 0) {
-                            displayedDocs = sortedDocs;
-                            renderPlaza(displayedDocs);
-                        } else {
-                            displayedDocs = sortedDocs;
-                            // 僅更新點擊數，避免 DOM 重繪造成閃爍
-                            snapshot.docChanges().forEach(change => {
-                                if (change.type === 'modified') {
-                                    const data = change.doc.data();
-                                    const card = document.getElementById(`santa-${change.doc.id}`);
-                                    if (card) {
-                                        const badge = card.querySelector('.click-badge');
-                                        if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
-
-                                        // 檢查是否因為點擊數改變導致冠軍易主，若是則需要重新渲染以更新帽子樣式
-                                        const currentWinner = displayedDocs[0];
-                                        if (currentWinner && currentWinner.id === change.doc.id) {
-                                            // 簡單起見，如果是前幾名變動，我們觸發一次重繪
-                                            renderPlaza(displayedDocs);
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    } else {
-                        // 人數過多時不即時排序
-                        if (plaza.children.length === 0 || plaza.children.length !== currentSnapshotDocs.length) {
-                            displayedDocs = currentSnapshotDocs;
-                            renderPlaza(displayedDocs);
-                        }
-                    }
                 }, error => console.log("Snapshot error", error));
             } catch (e) { console.error("Firestore error", e); }
         }
 
-        // 30秒大風吹 (如果人數很多)
+        // ⏰ 每 10 秒自動重新排序一次 (避免頻繁跳動)
         setInterval(() => {
-            if (currentSnapshotDocs.length > 40) {
-                let shuffled = [...currentSnapshotDocs];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                displayedDocs = shuffled;
-                renderPlaza(displayedDocs);
-            }
-        }, 30000);
+            sortDomElements();
+        }, 10000);
 
-        function renderPlaza(docs) {
-            docs = docs || displayedDocs;
-            if (!docs || docs.length === 0) return;
+        // ⚡ 輕量級更新：只改文字，不動 DOM
+        function updateCardContentOnly(data) {
+            const card = document.getElementById(`santa-${data.id}`);
+            if (!card) return;
+
+            // 更新讚數
+            const badge = card.querySelector('.click-badge');
+            if (badge) badge.innerText = `👍 ${data.clickCount || 0}`;
+
+            // 如果飾品或狀態變了，才需要重繪內部 (比較少發生)
+            const currentAcc = card.dataset.acc || 'none';
+            if (currentAcc !== (data.accessoryId || 'none')) {
+                card.innerHTML = generateCardHTML(data, card.dataset.winner === 'true');
+                card.dataset.acc = data.accessoryId || 'none';
+            }
+        }
+
+        // 🏗️ 建立 HTML 字串 (共用函式)
+        function generateCardHTML(data, isWinner) {
+            const accessoryId = data.accessoryId || 'none';
+            let accessoryHTML = '';
+            if (accessoryId === 'antlers') accessoryHTML = `<div class="accessory antlers"><div class="branch left"></div><div class="branch right"></div></div>`;
+            else if (accessoryId === 'halo') accessoryHTML = `<div class="accessory halo"></div>`;
+            else if (accessoryId === 'elf') accessoryHTML = `<div class="accessory elf"></div>`;
+            else if (accessoryId === 'gold') accessoryHTML = `<div class="accessory crown">👑</div>`;
+
+            const defaultHatHTML = `<div class="css-hat ${isWinner ? 'special' : ''}"></div>`;
+
+            // 隨機訊息處理
+            let displayMsg = data.customStatus || "Merry Xmas";
+            if (!data.customStatus) {
+                // 這裡為了效能，簡化隨機訊息，實際可保留原本陣列邏輯
+                const msgs = ["Ho Ho Ho", "聖誕快樂", "禮物呢?", "想下班", "加薪!", "吃大餐"];
+                displayMsg = msgs[Math.floor(Math.random() * msgs.length)];
+            }
+
+            return `
+                <div class="santa-wrapper ${danceClasses[Math.floor(Math.random() * danceClasses.length)]}" 
+                     style="animation-delay: -${Math.random() * 2}s;">
+                    <div class="speech-bubble" onclick="event.stopPropagation(); openLightbox('${escapeHtml(displayMsg)}', '${escapeHtml(data.name)}')">${escapeHtml(displayMsg.substring(0, 8))}</div>
+                    ${defaultHatHTML}
+                    ${accessoryHTML}
+                    <img src="${data.photoBase64}" class="santa-img" loading="lazy">
+                </div>
+                <div class="santa-name">${escapeHtml(data.name)}</div>
+                <div class="click-badge">👍 ${data.clickCount || 0}</div>
+            `;
+        }
+
+        // 🎨 建立或更新 DOM (物理移動)
+        function createOrUpdateCard(data) {
+            const plaza = document.getElementById('plaza');
+            let card = document.getElementById(`santa-${data.id}`);
+
+            if (!card) {
+                card = document.createElement('div');
+                const accId = data.accessoryId || 'none';
+                card.className = `santa-card ${accId === 'gold' ? 'gold-mode' : ''} ${accId !== 'none' ? 'has-accessory' : ''}`;
+                card.id = `santa-${data.id}`;
+                card.dataset.id = data.id;
+                card.dataset.acc = accId;
+                card.onclick = function () { handlePoke(this); };
+                card.innerHTML = generateCardHTML(data, false);
+                plaza.appendChild(card);
+            }
+        }
+
+        // 🔢 排序邏輯 (最耗效能，所以久久做一次)
+        function sortDomElements() {
+            if (isSorting) return;
+            isSorting = true;
 
             const plaza = document.getElementById('plaza');
-            if (!plaza) return;
+            const sortedData = Array.from(localDataMap.values()).sort((a, b) => {
+                // 按讚數多 -> 時間新
+                const timeA = a.createdAt ? a.createdAt.seconds : 0;
+                const timeB = b.createdAt ? b.createdAt.seconds : 0;
+                return (b.clickCount || 0) - (a.clickCount || 0) || (timeB - timeA);
+            });
 
-            // 找出第一名 (按讚數最高)
-            let winnerId = null;
-            if (currentSnapshotDocs && currentSnapshotDocs.length > 0) {
-                const winner = currentSnapshotDocs.reduce((prev, current) =>
-                    (prev.clickCount || 0) > (current.clickCount || 0) ? prev : current
-                    , currentSnapshotDocs[0]);
-                // 只有當按讚數大於0時才算有冠軍，避免剛開始大家都是0的時候就有皇冠
-                if ((winner.clickCount || 0) > 0) {
-                    winnerId = winner.id;
-                }
-            }
+            // 找出第一名 ID
+            const winnerId = sortedData.length > 0 && sortedData[0].clickCount > 0 ? sortedData[0].id : null;
 
-            let shuffledMessages = [...randomMessages];
-            for (let i = shuffledMessages.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledMessages[i], shuffledMessages[j]] = [shuffledMessages[j], shuffledMessages[i]];
-            }
+            // 使用 Fragment 減少 Reflow
+            const fragment = document.createDocumentFragment();
 
-            const existingIds = new Set();
-
-            docs.forEach((data, index) => {
-                existingIds.add(data.id);
+            sortedData.forEach(data => {
                 let card = document.getElementById(`santa-${data.id}`);
-                const clickCount = data.clickCount || 0;
-                const isWinner = (data.id === winnerId);
-                const accessoryId = data.accessoryId || 'none';
-
-                const isCustom = (data.customStatus && data.customStatus.trim() !== "");
-                const fullMsg = isCustom ? data.customStatus : shuffledMessages[index % shuffledMessages.length];
-                const persistentClass = isCustom ? "bubble-persistent" : "";
-                let displayMsg = fullMsg;
-                const msgChars = Array.from(fullMsg);
-                if (msgChars.length > 8) displayMsg = msgChars.slice(0, 8).join("") + "...";
-
-                const generateCardHTML = () => {
-                    let accessoryHTML = '';
-                    if (accessoryId === 'antlers') accessoryHTML = `<div class="accessory antlers"><div class="branch left"></div><div class="branch right"></div></div>`;
-                    else if (accessoryId === 'halo') accessoryHTML = `<div class="accessory halo"></div>`;
-                    else if (accessoryId === 'elf') accessoryHTML = `<div class="accessory elf"></div>`;
-                    else if (accessoryId === 'gold') accessoryHTML = `<div class="accessory crown">👑</div>`;
-
-                    // 帽子邏輯：如果不是第一名且有飾品，帽子在CSS中會被隱藏
-                    // 如果是第一名，會加上 special class 變成黃金大帽
-                    const defaultHatHTML = `<div class="css-hat ${isWinner ? 'special' : ''}"></div>`;
-
-                    return `
-                        <div class="santa-wrapper ${danceClasses[Math.floor(Math.random() * danceClasses.length)]}" 
-                             style="animation-delay: -${Math.random() * 2}s;">
-                            <div class="speech-bubble ${persistentClass}" style="animation-delay: -${Math.random() * 13}s;">${escapeHtml(displayMsg)}</div>
-                            ${defaultHatHTML}
-                            ${accessoryHTML}
-                            <img src="${data.photoBase64}" class="santa-img">
-                        </div>
-                        <div class="santa-name">${escapeHtml(data.name)}</div>
-                        <div class="click-badge">👍 ${clickCount}</div>
-                    `;
-                };
-
                 if (card) {
-                    // 更新現有卡片
-                    plaza.appendChild(card); // 移動到 DOM 的末尾以符合排序（如果需要）
-                    const hasAccessoryClass = (accessoryId !== 'none') ? 'has-accessory' : '';
-                    const goldClass = (accessoryId === 'gold') ? 'gold-mode' : '';
-                    card.classList.remove('gold-mode', 'has-accessory');
-                    if (goldClass) card.classList.add(goldClass);
-                    if (hasAccessoryClass) card.classList.add(hasAccessoryClass);
+                    // 檢查冠軍狀態是否改變
+                    const isWinner = (data.id === winnerId);
+                    const currentWinnerState = card.dataset.winner === 'true';
 
-                    const currentAccessory = card.dataset.acc || 'none';
-                    const currentWinnerState = card.dataset.winner || 'false';
-
-                    // 只有當飾品改變 或 冠軍狀態改變時，才重繪 HTML
-                    if (currentAccessory !== accessoryId || currentWinnerState !== isWinner.toString()) {
-                        card.innerHTML = generateCardHTML();
-                        card.dataset.acc = accessoryId;
+                    if (isWinner !== currentWinnerState) {
                         card.dataset.winner = isWinner;
-                        const bubbleEl = card.querySelector('.speech-bubble');
-                        if (bubbleEl) bubbleEl.onclick = (e) => { e.stopPropagation(); openLightbox(fullMsg, data.name); };
-                    } else {
-                        // 僅更新文字和數字
-                        const badge = card.querySelector('.click-badge');
-                        if (badge) badge.innerText = `👍 ${clickCount}`;
-                        const nameEl = card.querySelector('.santa-name');
-                        if (nameEl) nameEl.innerText = escapeHtml(data.name);
-
-                        const bubble = card.querySelector('.speech-bubble');
-                        if (bubble && !bubble.classList.contains('bubble-poke') && bubble.innerText !== displayMsg) {
-                            bubble.innerText = escapeHtml(displayMsg);
-                        }
+                        // 重繪帽子
+                        card.innerHTML = generateCardHTML(data, isWinner);
                     }
-                } else {
-                    // 建立新卡片
-                    card = document.createElement('div');
-                    card.className = `santa-card ${accessoryId === 'gold' ? 'gold-mode' : ''} ${accessoryId !== 'none' ? 'has-accessory' : ''}`;
-                    card.id = `santa-${data.id}`;
-                    card.dataset.id = data.id;
-                    card.dataset.acc = accessoryId;
-                    card.dataset.winner = isWinner;
-                    card.innerHTML = generateCardHTML();
-                    card.onclick = function () { handlePoke(this); };
-                    const bubbleEl = card.querySelector('.speech-bubble');
-                    bubbleEl.onclick = (e) => { e.stopPropagation(); openLightbox(fullMsg, data.name); };
-                    plaza.appendChild(card);
+                    fragment.appendChild(card);
                 }
             });
 
-            // 清理已刪除的卡片
-            Array.from(plaza.children).forEach(child => {
-                if (child.classList.contains('santa-card') && !existingIds.has(child.dataset.id)) { child.remove(); }
-            });
+            plaza.appendChild(fragment);
+
+            // 重置動畫 flag
+            requestAnimationFrame(() => { isSorting = false; });
         }
 
         function handlePoke(card) {
