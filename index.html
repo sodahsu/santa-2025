@@ -5,6 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>🎅 聖誕老人集合廣場</title>
+    <meta name="description" content="聖誕老人集合廣場，簡單兩步驟，讓大家在大螢幕上看見你！">
+    <meta property="og:title" content="🎅 聖誕老人集合廣場">
+    <meta property="og:description" content="聖誕老人集合廣場，簡單兩步驟，讓大家在大螢幕上看見你！">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sodahsu.github.io/santa-2025/">
+    <link rel="canonical" href="https://sodahsu.github.io/santa-2025/">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎄%3C/text%3E%3C/svg%3E">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -710,7 +717,7 @@
 
 <body>
     <!-- 🎵 音樂靜音按鈕 -->
-    <button id="musicToggle" class="music-btn">🔊</button>
+    <button id="musicToggle" class="music-btn" aria-label="切換背景音樂靜音">🔊</button>
 
     <!-- 🚪 入場遮罩 -->
     <div id="entry-overlay">
@@ -732,7 +739,7 @@
     </div>
 
     <!-- 🎵 背景音樂 -->
-    <audio id="bgm" src="https://sodahsu.github.io/santa-2025/christmas.mp3" loop></audio>
+    <audio id="bgm" src="christmas.mp3" loop></audio>
 
     <div class="disco-overlay"></div>
     <canvas id="snow-canvas"></canvas>
@@ -742,7 +749,7 @@
         <h1>🎄 Team Santa Plaza</h1>
 
         <div class="qr-card">
-            <img id="qr-code-img" src="" alt="Scan Me">
+            <img id="qr-code-img" src="" alt="加入聖誕老人集合廣場的 QR Code">
             <p>📱 掃描加入廣場 | <a href="#" id="directJoinLink"
                     style="color: var(--primary); text-decoration: underline; font-weight: bold;">點我直接加入</a></p>
         </div>
@@ -777,7 +784,7 @@
             <div id="preview-container" class="santa-wrapper"
                 style="display:none; transform: scale(1.2); margin: 20px;">
                 <div class="css-hat"></div>
-                <img id="preview-img" class="santa-img" src="">
+                <img id="preview-img" class="santa-img" src="" alt="照片預覽">
             </div>
 
             <button id="uploadBtn">🚀 發射！送我上大螢幕</button>
@@ -1049,6 +1056,10 @@
             return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
         }
 
+        function isSafePhotoDataUrl(value) {
+            return typeof value === 'string' && value.startsWith('data:image/') && !/["'<>\s]/.test(value);
+        }
+
         function generateCardHTML(data, isWinner) {
             const accId = data.accessoryId || 'none';
             let accHTML = '';
@@ -1060,13 +1071,15 @@
             const displayMsg = data.customStatus || ["Ho Ho Ho", "聖誕快樂", "禮物呢?", "想下班"][Math.floor(Math.random() * 4)];
             const bubbleDur = 10 + Math.random() * 10;
             const bubbleDelay = -Math.random() * bubbleDur;
+            const photoSrc = isSafePhotoDataUrl(data.photoBase64) ? escapeHtml(data.photoBase64) : '';
+            const photoAlt = escapeHtml(data.name ? `${data.name}的頭像` : '聖誕老人頭像');
 
             return `
                 <div class="santa-wrapper ${danceClasses[Math.floor(Math.random() * 3)]}" style="animation-delay: -${Math.random() * 2}s;">
                     <div class="speech-bubble" style="animation-duration: ${bubbleDur}s; animation-delay: ${bubbleDelay}s;">${escapeHtml(displayMsg.substring(0, 8))}</div>
                     <div class="css-hat ${isWinner ? 'special' : ''}"></div>
                     ${accHTML}
-                    <img src="${data.photoBase64}" class="santa-img" loading="lazy">
+                    <img src="${photoSrc}" class="santa-img" loading="lazy" alt="${photoAlt}">
                 </div>
                 <div class="santa-name">${escapeHtml(data.name)}</div>
                 <div class="click-badge">👍 ${data.clickCount || 0}</div>
